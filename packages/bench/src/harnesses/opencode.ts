@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import type { HarnessAdapter } from "./types.js";
+import { formatRunHeader } from "./cmd.js";
 
 function exec(cmd: string, args: string[], timeoutMs: number, cwd: string): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
@@ -27,12 +28,18 @@ export const opencodeAdapter: HarnessAdapter = {
   },
   async run(prompt, workdir, model, timeoutSec) {
     const started = Date.now();
+    // Ground the prompt: "workspace root" alone is ambiguous and the agent
+    // previously wrote to the repo root instead of the isolated workdir.
+    // `--dir` is what actually isolates opencode (child cwd alone is ignored).
+    const groundedPrompt = `Working directory: ${workdir}\nYou must create all output files inside that directory (the workspace root).\n\n${prompt}`;
+    const args = ["run", "--dir", workdir, "--model", model, groundedPrompt];
+    const header = formatRunHeader("opencode", args, workdir, timeoutSec, "closed");
     if (process.env.BENCH_LIVE_HARNESS !== "1") {
       return {
         status: "ok",
         durationMs: Date.now() - started,
         costUsd: null,
-        log: `$ opencode run --model ${model} [STUB: set BENCH_LIVE_HARNESS=1 for a real run]\nPrompt was ${prompt.length} chars; workspace left untouched.`,
+        log: `${header}\n[STUB: set BENCH_LIVE_HARNESS=1 for a real run]\nPrompt was ${prompt.length} chars; workspace left untouched.`,
       };
     }
     const timeoutMs = Math.max(1, timeoutSec) * 1000;
@@ -40,7 +47,7 @@ export const opencodeAdapter: HarnessAdapter = {
       const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
         const child = execFile(
           "opencode",
-          ["run", "--model", model, prompt],
+          args,
           { timeout: timeoutMs, cwd: workdir, maxBuffer: 10 * 1024 * 1024 },
           (err, stdout, stderr) => {
             if (err) reject(Object.assign(err, { stdout: String(stdout), stderr: String(stderr) }));
@@ -49,7 +56,7 @@ export const opencodeAdapter: HarnessAdapter = {
         );
         child.stdin?.end();
       });
-      return { status: "ok", durationMs: Date.now() - started, costUsd: null, log: `$ opencode run --model ${model}\n${stdout}\n${stderr}` };
+      return { status: "ok", durationMs: Date.now() - started, costUsd: null, log: `${header}\n${stdout}\n${stderr}` };
     } catch (err) {
       const e = err as { code?: string; stdout?: string; stderr?: string; killed?: boolean };
       const timedOut = e.killed === true;
@@ -58,7 +65,7 @@ export const opencodeAdapter: HarnessAdapter = {
         status: timedOut ? "timeout" : "error",
         durationMs: Date.now() - started,
         costUsd: null,
-        log: `$ opencode run --model ${model}\n${msg}`,
+        log: `${header}\n${msg}`,
       };
     }
   },

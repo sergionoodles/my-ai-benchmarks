@@ -2,13 +2,7 @@ import { execFile } from "node:child_process";
 import type { HarnessAdapter } from "./types.js";
 import { formatRunHeader } from "./cmd.js";
 
-function exec(
-  cmd: string,
-  args: string[],
-  timeoutMs: number,
-  cwd: string,
-  input?: string,
-): Promise<{ stdout: string; stderr: string }> {
+function exec(cmd: string, args: string[], timeoutMs: number, cwd: string): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = execFile(
       cmd,
@@ -19,25 +13,37 @@ function exec(
         else resolve({ stdout: String(stdout), stderr: String(stderr) });
       },
     );
-    // Always close stdin: `codex exec -` reads the prompt from stdin and
-    // would hang forever on an open pipe.
-    if (input !== undefined && child.stdin) {
-      child.stdin.write(input);
-    }
+    // Prompt is passed via `-p`, so stdin must be closed or `grok` may hang.
     child.stdin?.end();
   });
 }
 
-// Codex adapter: `codex exec` non-interactive mode.
+// `model` format: `<model-id>[@<reasoning-effort>]`, e.g. `grok-4.6@high`.
+// Everything before the last `@` is the `--model` id; the suffix (if any)
+// becomes `--reasoning-effort`.
+export function parseGrokModel(model: string): { modelId: string; effort?: string } {
+  const at = model.lastIndexOf("@");
+  if (at <= 0 || at === model.length - 1) return { modelId: model };
+  return { modelId: model.slice(0, at), effort: model.slice(at + 1) };
+}
+
+export function grokArgs(prompt: string, model: string): string[] {
+  const { modelId, effort } = parseGrokModel(model);
+  const args = ["-p", prompt, "--model", modelId, "--permission-mode", "bypassPermissions", "--output-format", "plain"];
+  if (effort) args.push("--reasoning-effort", effort);
+  return args;
+}
+
+// Grok adapter: `grok -p` non-interactive mode.
 //
 // v0 defaults to a stub run so `bench run` is fast and never hangs.
-// Set BENCH_LIVE_HARNESS=1 to invoke the real `codex exec` binary
-// (prompt passed via stdin, killed at timeoutSec -> status "timeout").
-export const codexAdapter: HarnessAdapter = {
-  name: "codex",
+// Set BENCH_LIVE_HARNESS=1 to invoke the real `grok` binary
+// (stdin closed, killed at timeoutSec -> status "timeout").
+export const grokAdapter: HarnessAdapter = {
+  name: "grok",
   async version() {
     try {
-      const { stdout } = await exec("codex", ["--version"], 10_000, process.cwd());
+      const { stdout } = await exec("grok", ["--version"], 10_000, process.cwd());
       return stdout.trim().slice(0, 120);
     } catch {
       return undefined;
@@ -45,8 +51,8 @@ export const codexAdapter: HarnessAdapter = {
   },
   async run(prompt, workdir, model, timeoutSec) {
     const started = Date.now();
-    const args = ["exec", "--model", model, "--skip-git-repo-check", "-"];
-    const header = formatRunHeader("codex", args, workdir, timeoutSec, `${prompt.length} chars via stdin`);
+    const args = grokArgs(prompt, model);
+    const header = formatRunHeader("grok", args, workdir, timeoutSec, "closed");
     if (process.env.BENCH_LIVE_HARNESS !== "1") {
       return {
         status: "ok",
@@ -57,18 +63,12 @@ export const codexAdapter: HarnessAdapter = {
     }
     const timeoutMs = Math.max(1, timeoutSec) * 1000;
     try {
-      const { stdout, stderr } = await exec(
-        "codex",
-        args,
-        timeoutMs,
-        workdir,
-        prompt,
-      );
+      const { stdout, stderr } = await exec("grok", args, timeoutMs, workdir);
       return { status: "ok", durationMs: Date.now() - started, costUsd: null, log: `${header}\n${stdout}\n${stderr}` };
     } catch (err) {
       const e = err as { code?: string; stdout?: string; stderr?: string; killed?: boolean };
       const timedOut = e.killed === true;
-      const msg = `codex ${timedOut ? "timed out" : `failed (${e.code ?? "error"})`}.\nstdout:\n${e.stdout ?? ""}\nstderr:\n${e.stderr ?? ""}`;
+      const msg = `grok ${timedOut ? "timed out" : `failed (${e.code ?? "error"})`}.\nstdout:\n${e.stdout ?? ""}\nstderr:\n${e.stderr ?? ""}`;
       return {
         status: timedOut ? "timeout" : "error",
         durationMs: Date.now() - started,

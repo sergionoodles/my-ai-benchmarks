@@ -34,6 +34,9 @@ export function loadTasks(tasksDir: string): Array<{ config: TaskConfig; prompt:
     .filter((d) => d.isDirectory())
     .map((d) => d.name)
     .sort()
+    // Skip the special samples/ archive folder — it holds example tasks,
+    // not runnable ones — plus any other dir without a task.json pair.
+    .filter((id) => id !== "samples" && fs.existsSync(path.join(tasksDir, id, "task.json")))
     .map((id) => loadTask(path.join(tasksDir, id)));
 }
 

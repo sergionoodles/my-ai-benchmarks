@@ -5,6 +5,7 @@ import { RunResultSchema, type ModelConfig, type RunResult, type TaskConfig } fr
 import { runChecks } from "./checks.js";
 import { stubJudge } from "./judge.js";
 import { codexAdapter } from "./harnesses/codex.js";
+import { grokAdapter } from "./harnesses/grok.js";
 import { opencodeAdapter } from "./harnesses/opencode.js";
 import type { HarnessAdapter } from "./harnesses/types.js";
 
@@ -17,7 +18,8 @@ const PLACEHOLDER_PNG = Buffer.from(
 function adapterFor(harness: string): HarnessAdapter {
   if (harness === "codex") return codexAdapter;
   if (harness === "opencode") return opencodeAdapter;
-  throw new Error(`unknown harness: ${harness} (supported: codex, opencode)`);
+  if (harness === "grok") return grokAdapter;
+  throw new Error(`unknown harness: ${harness} (supported: codex, opencode, grok)`);
 }
 
 function copyDir(src: string, dest: string): void {

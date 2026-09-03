@@ -8,6 +8,7 @@ import {
 import { judgeModel } from "./config.js";
 import { latestRunId, loadModels, loadTasks } from "./loaders.js";
 import { codexAdapter } from "./harnesses/codex.js";
+import { grokAdapter } from "./harnesses/grok.js";
 import { opencodeAdapter } from "./harnesses/opencode.js";
 
 function copyIfExists(src: string, dest: string): void {
@@ -69,9 +70,10 @@ export async function publishLatest(opts: {
     return { ...r, artifacts };
   });
 
-  const [codex, opencode] = await Promise.all([
+  const [codex, opencode, grok] = await Promise.all([
     codexAdapter.version().catch(() => undefined),
     opencodeAdapter.version().catch(() => undefined),
+    grokAdapter.version().catch(() => undefined),
   ]);
 
   const index: PublishedIndex = {
@@ -81,6 +83,7 @@ export async function publishLatest(opts: {
     harnessVersions: {
       ...(codex ? { codex } : {}),
       ...(opencode ? { opencode } : {}),
+      ...(grok ? { grok } : {}),
     },
     models: models
       .filter((m) => published.some((r) => r.modelId === m.id))

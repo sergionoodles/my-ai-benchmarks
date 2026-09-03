@@ -135,6 +135,7 @@ export const PublishedIndexSchema = z.object({
   harnessVersions: z.object({
     codex: z.string().optional(),
     opencode: z.string().optional(),
+    grok: z.string().optional(),
   }),
   models: z.array(PublishedModelSchema),
   tasks: z.array(PublishedTaskSchema),
