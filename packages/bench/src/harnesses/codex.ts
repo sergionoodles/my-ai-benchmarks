@@ -43,9 +43,11 @@ export const codexAdapter: HarnessAdapter = {
       return undefined;
     }
   },
-  async run(prompt, workdir, model, timeoutSec) {
+  async run(prompt, workdir, model, timeoutSec, reasoningEffort) {
     const started = Date.now();
-    const args = ["exec", "--model", model, "--skip-git-repo-check", "-"];
+    const args = ["exec", "--model", model, "--sandbox", "workspace-write", "--skip-git-repo-check"];
+    if (reasoningEffort) args.push("-c", `model_reasoning_effort=${reasoningEffort}`);
+    args.push("-");
     const header = formatRunHeader("codex", args, workdir, timeoutSec, `${prompt.length} chars via stdin`);
     if (process.env.BENCH_LIVE_HARNESS !== "1") {
       return {

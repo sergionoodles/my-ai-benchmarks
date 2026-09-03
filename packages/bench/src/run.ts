@@ -62,7 +62,7 @@ export interface RunOptions {
 export async function runOnePair(opts: RunOptions): Promise<string> {
   const { runsDir, tasksDir, runId, task, model } = opts;
   const { config } = task;
-  const outDir = path.join(runsDir, runId, config.id, model.id);
+  const outDir = path.join(runsDir, model.id, config.id, runId);
   const workdir = path.join(outDir, "workspace");
   fs.mkdirSync(workdir, { recursive: true });
 
@@ -79,7 +79,13 @@ export async function runOnePair(opts: RunOptions): Promise<string> {
 
   // 2. Invoke harness adapter.
   const adapter = adapterFor(model.harness);
-  const hres = await adapter.run(task.prompt, workdir, model.model, Math.min(model.timeoutSec, config.timeoutSec));
+  const hres = await adapter.run(
+    task.prompt,
+    workdir,
+    model.model,
+    Math.min(model.timeoutSec, config.timeoutSec),
+    model.reasoningEffort,
+  );
 
   // 3. v0 stub completion: if the harness didn't produce the expected
   // artifact, leave a deterministic placeholder so checks/publish/site work.

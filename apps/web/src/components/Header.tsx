@@ -10,36 +10,6 @@ const TICKER = [
   "this one is mine",
 ];
 
-export function SiteNav({ runId }: { runId?: string }) {
-  return (
-    <nav className="sticky top-0 z-40 border-b border-white/10 bg-background/75 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <a href="#top" className="flex items-center gap-2 no-underline">
-          <span className="bg-primary px-1.5 py-0.5 font-display text-sm font-extrabold leading-none text-primary-foreground">
-            n=1
-          </span>
-          <span className="hidden font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground sm:inline">
-            personal lab
-          </span>
-        </a>
-        <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          <a href="#method" className="transition-colors hover:text-primary">
-            Method
-          </a>
-          <a href="#scores" className="transition-colors hover:text-primary">
-            Scores
-          </a>
-          {runId && (
-            <span className="hidden truncate text-foreground/70 md:inline" title={runId}>
-              run {runId}
-            </span>
-          )}
-        </div>
-      </div>
-    </nav>
-  );
-}
-
 export function Hero({
   runId,
   publishedAt,
@@ -56,74 +26,49 @@ export function Hero({
       <div aria-hidden="true" className="hero-orb -right-24 -top-24 h-52 w-52 bg-primary/15 sm:h-80 sm:w-80 sm:bg-primary/25" />
       <div
         aria-hidden="true"
-        className="hero-orb -bottom-32 -left-16 h-48 w-48 bg-accent/15 sm:h-72 sm:w-72 sm:bg-accent/20"
+        className="hero-orb -bottom-32 -left-16 h-48 w-48 bg-primary/10 sm:h-72 sm:w-72 sm:bg-primary/15"
         style={{ animationDelay: "-6s" }}
       />
-      <div
-        aria-hidden="true"
-        className="hero-orb right-1/3 top-1/2 hidden h-40 w-40 bg-cyan-400/10 sm:block"
-        style={{ animationDelay: "-11s" }}
-      />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 pb-16 pt-14 sm:pt-20">
-        <p
-          className="animate-rise font-mono text-[11px] uppercase tracking-[0.18em] text-primary sm:tracking-[0.28em]"
-          style={{ animationDelay: "0.05s" }}
-        >
-          <span className="sm:hidden">n=1 · I ranked a mood</span>
-          <span className="hidden sm:inline">everyone else ranked models · I ranked a mood</span>
-        </p>
-
-        <h1 className="font-display text-[clamp(2.6rem,9vw,7.25rem)] font-extrabold leading-[0.88] tracking-[-0.055em]">
-          <span className="animate-rise block" style={{ animationDelay: "0.12s" }}>
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 pb-16 pt-16 sm:pt-24">
+        <h1 className="font-hand text-[clamp(2.15rem,6.4vw,5.25rem)] font-medium leading-[1.12] tracking-tight">
+          <span className="animate-rise block" style={{ animationDelay: "0.08s" }}>
             There are many
           </span>
-          <span className="animate-rise block" style={{ animationDelay: "0.2s" }}>
+          <span className="animate-rise block" style={{ animationDelay: "0.16s" }}>
             agent benchmarks
           </span>
-          <span
-            className="animate-rise mt-3 block font-medium italic tracking-[-0.04em] text-[clamp(1.5rem,4.4vw,3.25rem)] text-foreground/70"
-            style={{ animationDelay: "0.28s" }}
-          >
+          <span className="animate-rise block" style={{ animationDelay: "0.24s" }}>
             but this one is
           </span>
           <span
-            className="animate-rise mt-5 flex flex-wrap items-center gap-x-5 gap-y-4"
-            style={{ animationDelay: "0.36s" }}
+            className="animate-rise mt-3 flex flex-wrap items-center gap-x-5 gap-y-3"
+            style={{ animationDelay: "0.32s" }}
           >
             <span className="yours">yours</span>
             <span className="mine">mine</span>
           </span>
         </h1>
 
-        <div
-          className="animate-rise flex max-w-2xl flex-col gap-6"
-          style={{ animationDelay: "0.48s" }}
-        >
-          <p className="text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Not a generic suite. Not a paper. A public scoreboard for a private taste —
-            the messy tasks I actually ship against, scored the way I score them.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href="#scores"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-display text-base font-bold text-primary-foreground shadow-glow transition-transform hover:-translate-y-0.5"
-            >
-              See the scores
-              <span aria-hidden="true">→</span>
-            </a>
-            <a
-              href="#method"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 font-display text-base font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              How I score it
-            </a>
-          </div>
+        <div className="animate-rise flex flex-wrap items-center gap-3" style={{ animationDelay: "0.44s" }}>
+          <a
+            href="#scores"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-display text-base font-bold text-primary-foreground shadow-glow transition-transform hover:-translate-y-0.5"
+          >
+            See the scores
+            <span aria-hidden="true">→</span>
+          </a>
+          <a
+            href="#method"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 font-display text-base font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            How I score it
+          </a>
         </div>
 
         <dl
           className="animate-rise grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-4"
-          style={{ animationDelay: "0.6s" }}
+          style={{ animationDelay: "0.56s" }}
         >
           <Stat label="models" value={modelCount == null ? "—" : String(modelCount).padStart(2, "0")} />
           <Stat label="tasks" value={taskCount == null ? "—" : String(taskCount).padStart(2, "0")} />
@@ -158,7 +103,7 @@ export function Hero({
                     key={`${copy}-${item}`}
                     className="px-6 font-mono text-[11px] font-medium uppercase tracking-[0.32em]"
                   >
-                    <span className="mr-6 text-accent">●</span>
+                    <span className="mr-6 opacity-50">●</span>
                     {item}
                   </span>
                 ))}
@@ -182,7 +127,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function ScoringMethod() {
   return (
-    <section id="method" className="scroll-mt-24">
+    <section id="method" className="scroll-mt-8">
       <div className="mb-6 flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">the rubric</p>
         <h2 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">

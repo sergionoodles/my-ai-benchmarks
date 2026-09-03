@@ -11,6 +11,24 @@ function exec(cmd: string, args: string[], timeoutMs: number, cwd: string): Prom
   });
 }
 
+// `model` format: `<provider>/<model-id>[@<variant>]`,
+// e.g. `opencode/muse-spark-1.3-contributor-free@high`.
+// Everything before the last `@` is the `--model` id; the suffix (if any)
+// becomes `--variant` (provider-specific reasoning effort).
+export function parseOpencodeModel(model: string): { modelId: string; variant?: string } {
+  const at = model.lastIndexOf("@");
+  if (at <= 0 || at === model.length - 1) return { modelId: model };
+  return { modelId: model.slice(0, at), variant: model.slice(at + 1) };
+}
+
+export function opencodeArgs(workdir: string, model: string, prompt: string): string[] {
+  const { modelId, variant } = parseOpencodeModel(model);
+  const args = ["run", "--dir", workdir, "--model", modelId];
+  if (variant) args.push("--variant", variant);
+  args.push(prompt);
+  return args;
+}
+
 // OpenCode adapter: `opencode run` non-interactive mode.
 //
 // v0 defaults to a stub run so `bench run` is fast and never hangs.
@@ -32,7 +50,7 @@ export const opencodeAdapter: HarnessAdapter = {
     // previously wrote to the repo root instead of the isolated workdir.
     // `--dir` is what actually isolates opencode (child cwd alone is ignored).
     const groundedPrompt = `Working directory: ${workdir}\nYou must create all output files inside that directory (the workspace root).\n\n${prompt}`;
-    const args = ["run", "--dir", workdir, "--model", model, groundedPrompt];
+    const args = opencodeArgs(workdir, model, groundedPrompt);
     const header = formatRunHeader("opencode", args, workdir, timeoutSec, "closed");
     if (process.env.BENCH_LIVE_HARNESS !== "1") {
       return {

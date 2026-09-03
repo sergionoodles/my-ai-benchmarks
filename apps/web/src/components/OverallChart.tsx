@@ -47,7 +47,7 @@ export function OverallChart({ index }: { index: PublishedIndex }) {
               </div>
               <div className="flex items-center gap-2">
                 {!reviewed && (
-                  <Badge className="border-dashed border-amber-400/50 text-amber-300">unreviewed</Badge>
+                  <Badge className="border-dashed border-white/25 text-muted-foreground">unreviewed</Badge>
                 )}
                 <span className="font-display text-3xl font-extrabold tabular-nums leading-none">
                   {formatScore(avg)}

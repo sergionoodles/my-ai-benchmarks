@@ -41,11 +41,33 @@ export function loadTasks(tasksDir: string): Array<{ config: TaskConfig; prompt:
 }
 
 export function latestRunId(runsDir: string): string | null {
+  // Layout: runs/<modelId>/<taskId>/<timestamp>/result.json — the timestamp
+  // (runId) is the leaf dir, scattered across model/task branches.
   if (!fs.existsSync(runsDir)) return null;
-  const ids = fs
-    .readdirSync(runsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
+  const ids: string[] = [];
+  for (const modelEnt of fs.readdirSync(runsDir, { withFileTypes: true })) {
+    if (!modelEnt.isDirectory()) continue;
+    const modelDir = path.join(runsDir, modelEnt.name);
+    let taskEnts: fs.Dirent[];
+    try {
+      taskEnts = fs.readdirSync(modelDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const taskEnt of taskEnts) {
+      if (!taskEnt.isDirectory()) continue;
+      const taskDir = path.join(modelDir, taskEnt.name);
+      let runEnts: fs.Dirent[];
+      try {
+        runEnts = fs.readdirSync(taskDir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const runEnt of runEnts) {
+        if (runEnt.isDirectory()) ids.push(runEnt.name);
+      }
+    }
+  }
+  ids.sort();
   return ids.length ? ids[ids.length - 1] : null;
 }

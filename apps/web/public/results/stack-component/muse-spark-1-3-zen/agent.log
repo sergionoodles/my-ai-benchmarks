@@ -1,2 +1,0 @@
-$ opencode run --model opencode/muse-spark-1.3-contributor-free [STUB: set BENCH_LIVE_HARNESS=1 for a real run]
-Prompt was 565 chars; workspace left untouched.

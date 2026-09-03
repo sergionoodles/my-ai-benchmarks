@@ -42,7 +42,7 @@ export function DetailDrawer({
                 {s.reviewed ? (
                   <Badge className="border-primary/40 text-primary">reviewed</Badge>
                 ) : (
-                  <Badge className="border-dashed border-amber-400/50 text-amber-300">unreviewed</Badge>
+                  <Badge className="border-dashed border-white/25 text-muted-foreground">unreviewed</Badge>
                 )}
                 <Badge>{result.status}</Badge>
               </p>

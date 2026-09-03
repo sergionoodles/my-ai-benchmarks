@@ -12,6 +12,7 @@ export const ModelConfigSchema = z.object({
   displayName: z.string().min(1),
   harness: HarnessSchema,
   model: z.string().min(1),
+  reasoningEffort: z.enum(["low", "medium", "high", "xhigh"]).optional(),
   timeoutSec: z.number().int().positive(),
   costModel: z
     .object({
@@ -60,7 +61,7 @@ export const TaskConfigSchema = z.object({
 export type TaskConfig = z.infer<typeof TaskConfigSchema>;
 
 // ---------------------------------------------------------------------------
-// Run result: runs/<run-id>/<task-id>/<model-id>/result.json
+// Run result: runs/<model-id>/<task-id>/<run-id>/result.json
 // ---------------------------------------------------------------------------
 
 export const RunStatusSchema = z.enum(["ok", "error", "timeout"]);

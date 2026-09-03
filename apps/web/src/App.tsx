@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Hero, ScoringMethod, SiteNav } from "./components/Header";
+import { Hero, ScoringMethod } from "./components/Header";
 import { OverallChart } from "./components/OverallChart";
 import { ComparisonGrid } from "./components/ComparisonGrid";
 import { DetailDrawer } from "./components/DetailDrawer";
@@ -55,7 +55,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <SiteNav runId={state.kind === "ready" ? state.index.runId : undefined} />
       <Hero
         runId={state.kind === "ready" ? state.index.runId : undefined}
         publishedAt={state.kind === "ready" ? state.index.publishedAt : undefined}
@@ -66,7 +65,7 @@ export default function App() {
         <ScoringMethod />
 
         {state.kind === "loading" && (
-          <section id="scores" className="scroll-mt-24 rounded-2xl border border-white/10 bg-card p-6">
+          <section id="scores" className="scroll-mt-8 rounded-2xl border border-white/10 bg-card p-6">
             <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">loading</p>
             <p className="mt-2 font-display text-2xl font-bold">Pulling the latest grudges…</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -77,8 +76,8 @@ export default function App() {
         )}
 
         {state.kind === "empty" && (
-          <section id="scores" className="scroll-mt-24 rounded-2xl border border-dashed border-white/15 bg-card p-6">
-            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-accent">empty board</p>
+          <section id="scores" className="scroll-mt-8 rounded-2xl border border-dashed border-white/15 bg-card p-6">
+            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">empty board</p>
             <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight">
               The board is empty. The opinions are not.
             </h2>
@@ -95,15 +94,9 @@ export default function App() {
         )}
 
         {state.kind === "ready" && (
-          <div id="scores" className="scroll-mt-24 flex flex-col gap-10">
+          <div id="scores" className="scroll-mt-8 flex flex-col gap-10">
             <OverallChart index={state.index} />
             <ComparisonGrid index={state.index} onSelect={setSelected} />
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              judge: {state.index.judgeModel}
-              {state.index.harnessVersions.codex && <> · codex {state.index.harnessVersions.codex}</>}
-              {state.index.harnessVersions.opencode && <> · opencode {state.index.harnessVersions.opencode}</>}
-              {state.index.harnessVersions.grok && <> · grok {state.index.harnessVersions.grok}</>}
-            </p>
           </div>
         )}
       </main>
@@ -113,9 +106,14 @@ export default function App() {
             There are many agent benchmarks.{" "}
             <span className="text-primary">This one is mine.</span>
           </p>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            n=1 · no consensus · no mercy
-          </p>
+          <a
+            href="https://github.com/sergionoodles/my-ai-benchmarks"
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-primary"
+          >
+            GitHub
+          </a>
         </div>
       </footer>
       <DetailDrawer

@@ -27,6 +27,7 @@ export default {
       },
       fontFamily: {
         display: ['"Bricolage Grotesk"', "ui-sans-serif", "sans-serif"],
+        hand: ['"Shantell Sans"', "ui-sans-serif", "sans-serif"],
         sans: ['"Instrument Sans"', "ui-sans-serif", "sans-serif"],
         mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
       },

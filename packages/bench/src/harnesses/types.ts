@@ -10,5 +10,11 @@ export interface HarnessRunResult {
 export interface HarnessAdapter {
   name: string;
   version(): Promise<string | undefined>;
-  run(prompt: string, workdir: string, model: string, timeoutSec: number): Promise<HarnessRunResult>;
+  run(
+    prompt: string,
+    workdir: string,
+    model: string,
+    timeoutSec: number,
+    reasoningEffort?: string,
+  ): Promise<HarnessRunResult>;
 }

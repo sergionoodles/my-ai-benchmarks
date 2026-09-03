@@ -27,23 +27,21 @@ export async function publishLatest(opts: {
 }): Promise<string> {
   const runId = opts.runId ?? latestRunId(opts.runsDir);
   if (!runId) throw new Error(`no runs found in ${opts.runsDir} — run 'bench run' first`);
-  const runDir = path.join(opts.runsDir, runId);
-  if (!fs.existsSync(runDir)) throw new Error(`run not found: ${runDir}`);
 
   const models = loadModels(opts.modelsDir);
   const tasks = loadTasks(opts.tasksDir);
 
-  // Collect result.json files under runs/<runId>/**.
+  // Collect result.json files under runs/<modelId>/<taskId>/<runId>.
   const results = [];
   for (const task of tasks) {
     for (const model of models) {
-      const p = path.join(runDir, task.config.id, model.id, "result.json");
+      const p = path.join(opts.runsDir, model.id, task.config.id, runId, "result.json");
       if (fs.existsSync(p)) {
         results.push(RunResultSchema.parse(JSON.parse(fs.readFileSync(p, "utf8"))));
       }
     }
   }
-  if (results.length === 0) throw new Error(`no results in ${runDir}`);
+  if (results.length === 0) throw new Error(`no results for run ${runId} in ${opts.runsDir}`);
 
   // Fresh snapshot dir.
   fs.rmSync(opts.webResultsDir, { recursive: true, force: true });
@@ -51,7 +49,7 @@ export async function publishLatest(opts: {
 
   // Copy artifacts per (task, model) and rewrite artifact refs to public URLs.
   const published = results.map((r) => {
-    const srcDir = path.join(runDir, r.taskId, r.modelId);
+    const srcDir = path.join(opts.runsDir, r.modelId, r.taskId, r.runId);
     const destDir = path.join(opts.webResultsDir, r.taskId, r.modelId);
     fs.mkdirSync(destDir, { recursive: true });
     const artifacts: Record<string, string> = {};

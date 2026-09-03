@@ -4,18 +4,24 @@ import { ManualScoreSchema, RunResultSchema } from "@lab/schema";
 import { latestRunId } from "./loaders.js";
 
 export function listUnreviewed(runsDir: string, runId: string): string[] {
-  const runDir = path.join(runsDir, runId);
+  // Layout: runs/<modelId>/<taskId>/<runId>/result.json
   const out: string[] = [];
-  if (!fs.existsSync(runDir)) return out;
-  for (const taskId of fs.readdirSync(runDir)) {
-    const taskDir = path.join(runDir, taskId);
-    if (!fs.statSync(taskDir).isDirectory()) continue;
-    for (const modelId of fs.readdirSync(taskDir)) {
-      const resultPath = path.join(taskDir, modelId, "result.json");
+  if (!fs.existsSync(runsDir)) return out;
+  for (const modelId of fs.readdirSync(runsDir)) {
+    const modelDir = path.join(runsDir, modelId);
+    let stat: fs.Stats;
+    try {
+      stat = fs.statSync(modelDir);
+    } catch {
+      continue;
+    }
+    if (!stat.isDirectory()) continue;
+    for (const taskId of fs.readdirSync(modelDir)) {
+      const resultPath = path.join(modelDir, taskId, runId, "result.json");
       if (!fs.existsSync(resultPath)) continue;
       try {
         const r = RunResultSchema.parse(JSON.parse(fs.readFileSync(resultPath, "utf8")));
-        if (!r.manual) out.push(`${taskId} / ${modelId} — preview: ${path.join(taskDir, modelId, "preview.html")}`);
+        if (!r.manual) out.push(`${taskId} / ${modelId} — preview: ${path.join(modelDir, taskId, runId, "preview.html")}`);
       } catch {
         // ignore invalid results in review listing
       }
@@ -32,7 +38,7 @@ export function setManualScore(
   score: number,
   notes: string,
 ): string {
-  const dir = path.join(runsDir, runId, taskId, modelId);
+  const dir = path.join(runsDir, modelId, taskId, runId);
   const resultPath = path.join(dir, "result.json");
   if (!fs.existsSync(resultPath)) throw new Error(`result not found: ${resultPath}`);
   const manual = ManualScoreSchema.parse({ score, notes });

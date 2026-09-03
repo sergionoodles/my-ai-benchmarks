@@ -26,7 +26,7 @@ function ResultCell({
       onClick={() => onSelect(result)}
       className={cn(
         "group flex w-full flex-col gap-2 rounded-xl border border-white/10 bg-background/60 p-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-glow",
-        !s.reviewed && "border-dashed border-amber-400/30",
+        !s.reviewed && "border-dashed border-white/25",
       )}
       title={`${taskTitle} × ${modelName}: ${formatScore(s.composite)}`}
     >
@@ -47,7 +47,7 @@ function ResultCell({
           {formatScore(s.composite)}
         </span>
         {!s.reviewed ? (
-          <Badge className="border-dashed border-amber-400/50 text-amber-300">unreviewed</Badge>
+          <Badge className="border-dashed border-white/25 text-muted-foreground">unreviewed</Badge>
         ) : (
           <Badge className="border-primary/40 text-primary">reviewed</Badge>
         )}
