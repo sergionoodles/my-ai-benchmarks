@@ -26,7 +26,7 @@ export interface PublishedIndex {
   publishedAt: string;
   runId: string;
   judgeModel: string;
-  harnessVersions: { codex?: string; opencode?: string };
+  harnessVersions: { codex?: string; opencode?: string; grok?: string };
   models: Array<{ id: string; displayName: string; harness: string }>;
   tasks: Array<{ id: string; title: string; kind: string }>;
   results: RunResult[];

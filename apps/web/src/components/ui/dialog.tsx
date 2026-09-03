@@ -1,7 +1,6 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
 
-// Minimal shadcn-style modal/drawer (no extra deps for v1).
 export function Dialog({
   open,
   onClose,
@@ -18,17 +17,22 @@ export function Dialog({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-end" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div
         className={cn(
-          "relative ml-auto flex h-full w-full max-w-2xl flex-col overflow-hidden bg-card shadow-xl",
+          "relative ml-auto flex h-full w-full max-w-2xl flex-col overflow-hidden border-l border-primary/30 bg-card shadow-2xl",
           className,
         )}
       >
