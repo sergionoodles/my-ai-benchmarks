@@ -1,0 +1,72 @@
+{
+  "publishedAt": "2026-09-03T17:02:10.130Z",
+  "judgeModel": "stub-judge-v0",
+  "harnessVersions": {
+    "codex": "codex-cli 0.153.0",
+    "opencode": "1.18.27",
+    "grok": "grok 1.0.13 (5e9a58528b76) [stable]"
+  },
+  "model": {
+    "id": "muse-spark-1-2-zen",
+    "displayName": "Muse Spark 1.2 (Zen, high)",
+    "harness": "opencode"
+  },
+  "task": {
+    "id": "tetris-game",
+    "title": "Tetris game",
+    "kind": "ui"
+  },
+  "result": {
+    "runId": "muse-spark-1-2-zen/tetris-game",
+    "taskId": "tetris-game",
+    "modelId": "muse-spark-1-2-zen",
+    "harness": "opencode",
+    "status": "ok",
+    "durationMs": 75866,
+    "costUsd": null,
+    "checks": [
+      {
+        "id": "tetris-exists",
+        "pass": true,
+        "weight": 1,
+        "details": "tetris.html"
+      },
+      {
+        "id": "has-canvas",
+        "pass": true,
+        "weight": 1,
+        "details": "found <canvas"
+      },
+      {
+        "id": "has-game-script",
+        "pass": true,
+        "weight": 1,
+        "details": "found <script"
+      },
+      {
+        "id": "mentions-tetris",
+        "pass": true,
+        "weight": 1,
+        "details": "found Tetris"
+      },
+      {
+        "id": "has-piece-logic",
+        "pass": true,
+        "weight": 1,
+        "details": "found rotate"
+      }
+    ],
+    "llmJudge": {
+      "score": 10,
+      "rubric": "v0 stub rubric: structure, completeness, taste (placeholder — wire a real judge LLM next).",
+      "judgeModel": "stub-judge-v0",
+      "rationale": "Stub judge for muse-spark-1-2-zen on tetris-game: 5/5 checks passed. This is a placeholder rationale — wire a real judge LLM to get qualitative scoring."
+    },
+    "manual": null,
+    "artifacts": {
+      "html": "results/tetris-game/muse-spark-1-2-zen/preview.html",
+      "screenshot": "results/tetris-game/muse-spark-1-2-zen/screenshot.png",
+      "log": "results/tetris-game/muse-spark-1-2-zen/agent.log"
+    }
+  }
+}

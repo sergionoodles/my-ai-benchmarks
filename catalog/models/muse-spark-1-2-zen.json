@@ -1,0 +1,8 @@
+{
+  "id": "muse-spark-1-2-zen",
+  "displayName": "Muse Spark 1.2 (Zen, high)",
+  "harness": "opencode",
+  "model": "opencode/muse-spark-1.2-contributor-free@high",
+  "timeoutSec": 900,
+  "notes": "Free OpenCode Zen model with high reasoning effort (--variant high)."
+}

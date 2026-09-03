@@ -1,0 +1,62 @@
+$ opencode run --dir /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-2-zen/tetris-game/workspace --model opencode/muse-spark-1.2-contributor-free --variant high 'Working directory: /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-2-zen/tetris-game/workspace
+You must create all output files inside that directory (the workspace root).
+
+Design a fully featured Tetris game in HTML. Create a single html file `tetris.html`
+'
+cwd: /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-2-zen/tetris-game/workspace
+timeout: 900s
+stdin: closed
+Tetris game created at `tetris.html:1` — single HTML file, no dependencies (except Google Fonts).
+
+**Aesthetic:** Industrial CRT terminal — charcoal / navy, neon cyan/magenta/amber, chamfered arcade cabinet frame with screw details, scanlines, phosphor glow, monospace + Syne typography.
+
+**Features implemented:**
+- 10×20 grid, 30px cells, Canvas rendering with beveled neon blocks (`tetris.html:334` `drawCell`)
+- All 7 tetrominoes with SRS-inspired wall kicks (I-piece kicks separate) (`tetris.html:49`)
+- Ghost preview, Hold (C/Shift), Next queue ×5 with active highlight
+- Rotation (↑/X cw, Z ccw), DAS/ARR handling, Soft Drop (↓, 1pt/cell), Hard Drop (Space, 2pt/cell), Lock delay 500ms
+- Line clear, scoring: 100/300/500/800 × level + back-to-back Tetris ×1.5 + combo, level every 10 lines with accelerating `levelSpeed` (`tetris.html:244`)
+- HUD: Score (pop animation), Lines, Level, progress bar, piece-count stats, timer
+- Overlays: Start / Pause (P) / Game Over with shake, Restart
+- Mobile controls (5-way + hard/hold) + keyboard, responsive 3-column → stacked layout
+- Web Audio beeps on rotate/drop, CRT scanline/grid textures, flash on level-up
+
+File size: 37.9KB, 1016 lines — verified at `workspace/tetris.html`.
+
+[0m
+> build · muse-spark-1.2-contributor-free
+[0m
+[0m→ [0mSkill "frontend-design"
+[0m→ [0mRead .
+[0m
+[0m← [0mWrite tetris.html
+Wrote file successfully.
+[0m
+[0m$ [0mrtk ls -lh /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-2-zen/tetris-game/workspace/tetris.html && rtk wc -l /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-2-zen/tetris-game/workspace/tetris.html
+644  /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-2-zen/tetris-game/workspace/tetris.html  37.9K
+1016
+[0m
+[0m$ [0mrtk ls -lh tetris.html && rtk wc -l tetris.html && head -n 20 tetris.html
+644  tetris.html  37.9K
+1016
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TETRIS — Control System 4.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070A0F;
+  --bg2:#0D121C;
+  --panel:#111827;
+  --panel2:#1A2332;
+  --panel3:#1E2A3D;
+  --border:#2A3A52;
+  --border2:#33465F;
+  --text:#E6EDF3;
+  --muted:#7A8BA6;
+  --dim:#4A5A73;
+[0m

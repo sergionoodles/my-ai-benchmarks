@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { RunResultSchema, type ModelConfig, type RunResult, type TaskConfig } from "@lab/schema";
+import { RunResultSchema, runIdFor, type ModelConfig, type RunResult, type TaskConfig } from "@lab/schema";
 import { runChecks } from "./checks.js";
 import { stubJudge } from "./judge.js";
 import { codexAdapter } from "./harnesses/codex.js";
@@ -54,17 +54,27 @@ export interface RunOptions {
   root: string;
   runsDir: string;
   tasksDir: string;
-  runId: string;
   task: { config: TaskConfig; prompt: string };
   model: ModelConfig;
 }
 
 export async function runOnePair(opts: RunOptions): Promise<string> {
-  const { runsDir, tasksDir, runId, task, model } = opts;
+  const { runsDir, tasksDir, task, model } = opts;
   const { config } = task;
-  const outDir = path.join(runsDir, model.id, config.id, runId);
+  // The run id IS "<model>/<task>" — re-running a pair overwrites it.
+  const runId = runIdFor(model.id, config.id);
+  const outDir = path.join(runsDir, model.id, config.id);
   const workdir = path.join(outDir, "workspace");
+  // Overwrite semantics: a re-run replaces the previous run for this pair.
+  fs.rmSync(workdir, { recursive: true, force: true });
   fs.mkdirSync(workdir, { recursive: true });
+  // Drop legacy timestamped leaf dirs (runs/<model>/<task>/<runId>/) left
+  // over from before the rework — the pair dir itself is now the run.
+  for (const ent of fs.readdirSync(outDir, { withFileTypes: true })) {
+    if (ent.isDirectory() && ent.name !== "workspace") {
+      fs.rmSync(path.join(outDir, ent.name), { recursive: true, force: true });
+    }
+  }
 
   // 1. Copy fixture into a fresh workspace with its own git repo.
   const fixtureSrc = path.join(tasksDir, config.id, config.fixturePath);

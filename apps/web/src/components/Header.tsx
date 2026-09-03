@@ -11,12 +11,10 @@ const TICKER = [
 ];
 
 export function Hero({
-  runId,
   publishedAt,
   modelCount,
   taskCount,
 }: {
-  runId?: string;
   publishedAt?: string;
   modelCount?: number;
   taskCount?: number;
@@ -76,19 +74,9 @@ export function Hero({
           <Stat label="vendor charts" value="00" />
         </dl>
 
-        {(runId || publishedAt) && (
+        {publishedAt && (
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            {runId && (
-              <>
-                latest run <span className="text-foreground">{runId}</span>
-              </>
-            )}
-            {publishedAt && (
-              <>
-                {runId ? " · " : null}
-                published {new Date(publishedAt).toLocaleString()}
-              </>
-            )}
+            published {new Date(publishedAt).toLocaleString()}
           </p>
         )}
       </div>

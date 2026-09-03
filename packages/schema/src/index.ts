@@ -61,7 +61,8 @@ export const TaskConfigSchema = z.object({
 export type TaskConfig = z.infer<typeof TaskConfigSchema>;
 
 // ---------------------------------------------------------------------------
-// Run result: runs/<model-id>/<task-id>/<run-id>/result.json
+// Run result: runs/<model-id>/<task-id>/result.json
+// The run id IS "<model-id>/<task-id>" — re-running a pair overwrites it.
 // ---------------------------------------------------------------------------
 
 export const RunStatusSchema = z.enum(["ok", "error", "timeout"]);
@@ -112,7 +113,9 @@ export const RunResultSchema = z.object({
 export type RunResult = z.infer<typeof RunResultSchema>;
 
 // ---------------------------------------------------------------------------
-// Published index: apps/web/public/results/index.json
+// Published entry: apps/web/public/results/<task-id>/<model-id>/result.json
+// One self-contained JSON per published run — the site aggregates them at
+// build time via import.meta.glob, so there is no single huge index.json.
 // ---------------------------------------------------------------------------
 
 export const PublishedModelSchema = z.object({
@@ -129,20 +132,23 @@ export const PublishedTaskSchema = z.object({
 });
 export type PublishedTask = z.infer<typeof PublishedTaskSchema>;
 
-export const PublishedIndexSchema = z.object({
+export const PublishedEntrySchema = z.object({
   publishedAt: z.string(),
-  runId: z.string(),
   judgeModel: z.string(),
   harnessVersions: z.object({
     codex: z.string().optional(),
     opencode: z.string().optional(),
     grok: z.string().optional(),
   }),
-  models: z.array(PublishedModelSchema),
-  tasks: z.array(PublishedTaskSchema),
-  results: z.array(RunResultSchema),
+  model: PublishedModelSchema,
+  task: PublishedTaskSchema,
+  result: RunResultSchema,
 });
-export type PublishedIndex = z.infer<typeof PublishedIndexSchema>;
+export type PublishedEntry = z.infer<typeof PublishedEntrySchema>;
+
+export function runIdFor(modelId: string, taskId: string): string {
+  return `${modelId}/${taskId}`;
+}
 
 // ---------------------------------------------------------------------------
 // Scoring helper (shared by CLI + web so numbers match).

@@ -1,0 +1,72 @@
+{
+  "publishedAt": "2026-09-03T17:02:10.126Z",
+  "judgeModel": "stub-judge-v0",
+  "harnessVersions": {
+    "codex": "codex-cli 0.153.0",
+    "opencode": "1.18.27",
+    "grok": "grok 1.0.13 (5e9a58528b76) [stable]"
+  },
+  "model": {
+    "id": "gpt-5-6-luna-high",
+    "displayName": "GPT-5.6 Luna (high)",
+    "harness": "codex"
+  },
+  "task": {
+    "id": "tetris-game",
+    "title": "Tetris game",
+    "kind": "ui"
+  },
+  "result": {
+    "runId": "gpt-5-6-luna-high/tetris-game",
+    "taskId": "tetris-game",
+    "modelId": "gpt-5-6-luna-high",
+    "harness": "codex",
+    "status": "ok",
+    "durationMs": 243382,
+    "costUsd": null,
+    "checks": [
+      {
+        "id": "tetris-exists",
+        "pass": true,
+        "weight": 1,
+        "details": "tetris.html"
+      },
+      {
+        "id": "has-canvas",
+        "pass": true,
+        "weight": 1,
+        "details": "found <canvas"
+      },
+      {
+        "id": "has-game-script",
+        "pass": true,
+        "weight": 1,
+        "details": "found <script"
+      },
+      {
+        "id": "mentions-tetris",
+        "pass": true,
+        "weight": 1,
+        "details": "found Tetris"
+      },
+      {
+        "id": "has-piece-logic",
+        "pass": true,
+        "weight": 1,
+        "details": "found rotate"
+      }
+    ],
+    "llmJudge": {
+      "score": 9.8,
+      "rubric": "v0 stub rubric: structure, completeness, taste (placeholder — wire a real judge LLM next).",
+      "judgeModel": "stub-judge-v0",
+      "rationale": "Stub judge for gpt-5-6-luna-high on tetris-game: 5/5 checks passed. This is a placeholder rationale — wire a real judge LLM to get qualitative scoring."
+    },
+    "manual": null,
+    "artifacts": {
+      "html": "results/tetris-game/gpt-5-6-luna-high/preview.html",
+      "screenshot": "results/tetris-game/gpt-5-6-luna-high/screenshot.png",
+      "log": "results/tetris-game/gpt-5-6-luna-high/agent.log"
+    }
+  }
+}

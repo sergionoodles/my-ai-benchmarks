@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import { newRunId, paths } from "./config.js";
+import { paths } from "./config.js";
 import { loadModels, loadTasks } from "./loaders.js";
 import { runOnePair } from "./run.js";
-import { publishLatest } from "./publish.js";
-import { listUnreviewed, resolveRunId, setManualScore } from "./review.js";
+import { publishPairs, type PublishSelector } from "./publish.js";
+import { listUnreviewed, setManualScore } from "./review.js";
 
 const p = paths();
 
@@ -12,16 +12,20 @@ function usage(): string {
   return [
     "bench <command> [options]",
     "",
+    "Runs are identified by <model>/<task> — re-running a pair overwrites it.",
+    "",
     "Commands:",
-    "  run [--task <id>] [--model <id>] [--all] [--run-id <id>]",
-    "  review [--run-id <id>] [--task <id> --model <id> --score <0-10> --notes <text>]",
-    "  publish [--run-id <id>]",
+    "  run [--task <id>] [--model <id>] [--all]",
+    "  review [--task <id> --model <id> --score <0-10> --notes <text>]",
+    "  publish --all | --model <id> [--task <id>] | <model>[/<task>]",
     "",
     "Examples:",
     "  bench run --task landing-page --model gpt-5-codex",
     "  bench run --all",
     '  bench review --task landing-page --model gpt-5-codex --score 7 --notes "Nice hero."',
-    "  bench publish",
+    "  bench publish --all",
+    "  bench publish gpt-5-codex",
+    "  bench publish gpt-5-codex/landing-page",
   ].join("\n");
 }
 
@@ -37,7 +41,6 @@ async function cmdRun(): Promise<void> {
   const all = has("--all");
   const taskId = arg("--task");
   const modelId = arg("--model");
-  const runId = arg("--run-id") ?? newRunId();
 
   const models = loadModels(p.catalogModels);
   const tasks = loadTasks(p.catalogTasks);
@@ -66,18 +69,16 @@ async function cmdRun(): Promise<void> {
         root: p.root,
         runsDir: p.runs,
         tasksDir: p.catalogTasks,
-        runId,
         task,
         model,
       });
       console.log(`ok ${dir}`);
     }
   }
-  console.log(`run ${runId} done (${selTasks.length} tasks x ${selModels.length} models)`);
+  console.log(`done (${selTasks.length} tasks x ${selModels.length} models)`);
 }
 
 async function cmdReview(): Promise<void> {
-  const runId = resolveRunId(p.runs, arg("--run-id"));
   const taskId = arg("--task");
   const modelId = arg("--model");
   const scoreRaw = arg("--score");
@@ -88,41 +89,91 @@ async function cmdReview(): Promise<void> {
     if (!Number.isFinite(score) || score < 0 || score > 10) {
       throw new Error("--score must be a number between 0 and 10");
     }
-    const updated = setManualScore(p.runs, runId, taskId, modelId, score, notes);
+    const updated = setManualScore(p.runs, taskId, modelId, score, notes);
     console.log(`ok ${updated}`);
     return;
   }
-  const pending = listUnreviewed(p.runs, runId);
+  const pending = listUnreviewed(p.runs);
   if (pending.length === 0) {
-    console.log(`run ${runId}: all reviewed`);
+    console.log(`all reviewed`);
     return;
   }
-  console.log(`run ${runId}: ${pending.length} unreviewed`);
+  console.log(`${pending.length} unreviewed`);
   for (const line of pending) console.log(`- ${line}`);
   console.log(`Set a score: bench review --task <id> --model <id> --score <0-10> --notes "<text>"`);
 }
 
-async function cmdPublish(): Promise<void> {
-  const indexPath = await publishLatest({
+function parsePublishSelector(cmdArgs: string[]): PublishSelector {
+  const all = has("--all");
+  const modelFlag = arg("--model");
+  const taskFlag = arg("--task");
+  // First non-flag arg after the command, e.g. "gpt-5-codex" or "model/task".
+  // Flag values must be skipped — only bare positionals count.
+  const takesValue = new Set(["--model", "--task"]);
+  let positional: string | undefined;
+  for (let i = 0; i < cmdArgs.length; i++) {
+    const a = cmdArgs[i];
+    if (takesValue.has(a)) {
+      i++;
+      continue;
+    }
+    if (a.startsWith("-")) continue;
+    positional = a;
+    break;
+  }
+
+  if (all) {
+    if (modelFlag || taskFlag || positional) {
+      throw new Error("usage: bench publish --all | --model <id> [--task <id>] | <model>[/<task>]");
+    }
+    return { kind: "all" };
+  }
+
+  let model = modelFlag;
+  let task = taskFlag;
+  if (positional) {
+    if (model || task) {
+      throw new Error("usage: bench publish --all | --model <id> [--task <id>] | <model>[/<task>]");
+    }
+    const parts = positional.split("/");
+    if (parts.length === 1) model = parts[0];
+    else if (parts.length === 2) [model, task] = parts;
+    else throw new Error(`invalid selector: ${positional} (expected <model>[/<task>])`);
+  }
+
+  if (!model && !task) {
+    throw new Error("usage: bench publish --all | --model <id> [--task <id>] | <model>[/<task>]");
+  }
+  if (task && !model) {
+    throw new Error("--task requires --model (runs are identified by <model>/<task>)");
+  }
+  if (model && task) return { kind: "pair", model, task };
+  return { kind: "model", model: model as string };
+}
+
+async function cmdPublish(cmdArgs: string[]): Promise<void> {
+  const selector = parsePublishSelector(cmdArgs);
+  const written = await publishPairs({
     root: p.root,
     runsDir: p.runs,
     tasksDir: p.catalogTasks,
     modelsDir: p.catalogModels,
     webResultsDir: p.webResults,
-    runId: arg("--run-id"),
+    selector,
   });
-  console.log(`ok ${indexPath}`);
+  for (const w of written) console.log(`ok ${w}`);
 }
 
 async function main(): Promise<void> {
   const cmd = process.argv[2];
+  const cmdArgs = process.argv.slice(3);
   if (!cmd || cmd === "-h" || cmd === "--help" || cmd === "help") {
     console.log(usage());
     return;
   }
   if (cmd === "run") await cmdRun();
   else if (cmd === "review") await cmdReview();
-  else if (cmd === "publish") await cmdPublish();
+  else if (cmd === "publish") await cmdPublish(cmdArgs);
   else throw new Error(`unknown command: ${cmd}\n\n${usage()}`);
 }
 

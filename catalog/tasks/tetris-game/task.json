@@ -1,0 +1,17 @@
+{
+  "id": "tetris-game",
+  "title": "Tetris game",
+  "kind": "ui",
+  "description": "Build a fully featured Tetris game as a single self-contained HTML file.",
+  "weights": { "checks": 0.4, "llmJudge": 0.4, "manual": 0.2 },
+  "timeoutSec": 900,
+  "screenshot": true,
+  "iframePath": "tetris.html",
+  "checks": [
+    { "id": "tetris-exists", "type": "file-exists", "weight": 1, "config": { "path": "tetris.html" } },
+    { "id": "has-canvas", "type": "contains", "weight": 1, "config": { "path": "tetris.html", "pattern": "<canvas" } },
+    { "id": "has-game-script", "type": "contains", "weight": 1, "config": { "path": "tetris.html", "pattern": "<script" } },
+    { "id": "mentions-tetris", "type": "contains", "weight": 1, "config": { "path": "tetris.html", "pattern": "Tetris" } },
+    { "id": "has-piece-logic", "type": "contains", "weight": 1, "config": { "path": "tetris.html", "pattern": "rotate" } }
+  ]
+}

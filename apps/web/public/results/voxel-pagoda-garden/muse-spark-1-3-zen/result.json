@@ -1,0 +1,78 @@
+{
+  "publishedAt": "2026-09-03T17:02:10.133Z",
+  "judgeModel": "stub-judge-v0",
+  "harnessVersions": {
+    "codex": "codex-cli 0.153.0",
+    "opencode": "1.18.27",
+    "grok": "grok 1.0.13 (5e9a58528b76) [stable]"
+  },
+  "model": {
+    "id": "muse-spark-1-3-zen",
+    "displayName": "Muse Spark 1.3 (Zen, high)",
+    "harness": "opencode"
+  },
+  "task": {
+    "id": "voxel-pagoda-garden",
+    "title": "Voxel pagoda garden",
+    "kind": "ui"
+  },
+  "result": {
+    "runId": "muse-spark-1-3-zen/voxel-pagoda-garden",
+    "taskId": "voxel-pagoda-garden",
+    "modelId": "muse-spark-1-3-zen",
+    "harness": "opencode",
+    "status": "ok",
+    "durationMs": 91778,
+    "costUsd": null,
+    "checks": [
+      {
+        "id": "html-exists",
+        "pass": true,
+        "weight": 1,
+        "details": "preview.html"
+      },
+      {
+        "id": "has-canvas",
+        "pass": false,
+        "weight": 1,
+        "details": "no match for <canvas"
+      },
+      {
+        "id": "has-script",
+        "pass": true,
+        "weight": 1,
+        "details": "found <script"
+      },
+      {
+        "id": "mentions-voxel",
+        "pass": true,
+        "weight": 1,
+        "details": "found voxel"
+      },
+      {
+        "id": "mentions-pagoda",
+        "pass": true,
+        "weight": 1,
+        "details": "found pagoda"
+      },
+      {
+        "id": "mentions-cherry",
+        "pass": true,
+        "weight": 1,
+        "details": "found cherry"
+      }
+    ],
+    "llmJudge": {
+      "score": 8.8,
+      "rubric": "v0 stub rubric: structure, completeness, taste (placeholder — wire a real judge LLM next).",
+      "judgeModel": "stub-judge-v0",
+      "rationale": "Stub judge for muse-spark-1-3-zen on voxel-pagoda-garden: 5/6 checks passed. This is a placeholder rationale — wire a real judge LLM to get qualitative scoring."
+    },
+    "manual": null,
+    "artifacts": {
+      "html": "results/voxel-pagoda-garden/muse-spark-1-3-zen/preview.html",
+      "screenshot": "results/voxel-pagoda-garden/muse-spark-1-3-zen/screenshot.png",
+      "log": "results/voxel-pagoda-garden/muse-spark-1-3-zen/agent.log"
+    }
+  }
+}

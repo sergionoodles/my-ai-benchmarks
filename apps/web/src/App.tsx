@@ -3,7 +3,13 @@ import { Hero, ScoringMethod } from "./components/Header";
 import { OverallChart } from "./components/OverallChart";
 import { ComparisonGrid } from "./components/ComparisonGrid";
 import { DetailDrawer } from "./components/DetailDrawer";
-import type { PublishedIndex, RunResult } from "./lib/results";
+import {
+  fetchLegacyIndex,
+  indexFromEntries,
+  loadBundledEntries,
+  type PublishedIndex,
+  type RunResult,
+} from "./lib/results";
 
 type State =
   | { kind: "loading" }
@@ -17,28 +23,23 @@ export default function App() {
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch(`${import.meta.env.BASE_URL}results/index.json`, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const index = (await res.json()) as PublishedIndex;
-        if (!cancelled) {
-          if (!index.results || index.results.length === 0) {
-            setState({
-              kind: "empty",
-              message:
-                "Published snapshot is empty. Run `pnpm bench run --all` then `pnpm bench publish`.",
-            });
-          } else {
-            setState({ kind: "ready", index });
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
+      // Runs are bundled at build time via import.meta.glob
+      // (public/results/<task>/<model>/result.json).
+      const bundled = indexFromEntries(loadBundledEntries());
+      if (bundled) {
+        if (!cancelled) setState({ kind: "ready", index: bundled });
+        return;
+      }
+      // Fallback for snapshots published before the per-run rework.
+      const legacy = await fetchLegacyIndex();
+      if (!cancelled) {
+        if (legacy) setState({ kind: "ready", index: legacy });
+        else
           setState({
             kind: "empty",
-            message: `No published results yet (${err instanceof Error ? err.message : String(err)}). Run \`pnpm bench run --all\` then \`pnpm bench publish\`.`,
+            message:
+              "No published results yet. Run `pnpm bench run --all` then `pnpm bench publish --all`.",
           });
-        }
       }
     })();
     return () => {
@@ -56,7 +57,6 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <Hero
-        runId={state.kind === "ready" ? state.index.runId : undefined}
         publishedAt={state.kind === "ready" ? state.index.publishedAt : undefined}
         modelCount={state.kind === "ready" ? state.index.models.length : undefined}
         taskCount={state.kind === "ready" ? state.index.tasks.length : undefined}

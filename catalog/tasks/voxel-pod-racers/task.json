@@ -1,0 +1,18 @@
+{
+  "id": "voxel-pod-racers",
+  "title": "Voxel pod-racers run",
+  "kind": "ui",
+  "description": "Build a single-file voxel pod-racing game with a playable third-person run view.",
+  "weights": { "checks": 0.4, "llmJudge": 0.4, "manual": 0.2 },
+  "timeoutSec": 900,
+  "screenshot": true,
+  "iframePath": "pod.html",
+  "checks": [
+    { "id": "pod-exists", "type": "file-exists", "weight": 1, "config": { "path": "pod.html" } },
+    { "id": "has-canvas", "type": "contains", "weight": 1, "config": { "path": "pod.html", "pattern": "<canvas" } },
+    { "id": "has-game-script", "type": "contains", "weight": 1, "config": { "path": "pod.html", "pattern": "<script" } },
+    { "id": "mentions-voxel", "type": "contains", "weight": 1, "config": { "path": "pod.html", "pattern": "voxel" } },
+    { "id": "mentions-pod-racing", "type": "contains", "weight": 1, "config": { "path": "pod.html", "pattern": "pod" } },
+    { "id": "has-third-person-view", "type": "contains", "weight": 1, "config": { "path": "pod.html", "pattern": "third" } }
+  ]
+}

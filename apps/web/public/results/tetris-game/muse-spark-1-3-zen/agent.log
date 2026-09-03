@@ -1,0 +1,31 @@
+$ opencode run --dir /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-3-zen/tetris-game/workspace --model opencode/muse-spark-1.3-contributor-free --variant high 'Working directory: /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-3-zen/tetris-game/workspace
+You must create all output files inside that directory (the workspace root).
+
+Design a fully featured Tetris game in HTML. Create a single html file `tetris.html`
+'
+cwd: /home/sergio/workspace/my-ai-benchmark/runs/muse-spark-1-3-zen/tetris-game/workspace
+timeout: 900s
+stdin: closed
+Created `tetris.html` (28KB, single file, no dependencies) in the workspace root.
+
+Features:
+- 10×20 board, 7-bag randomizer, 5-piece Next, Hold (C/Shift), Ghost piece
+- SRS rotation with JLSTZ + I wall kicks, DAS/ARR auto-shift, soft/hard drop, 500ms lock delay with move resets
+- Scoring: Guideline line scores × level, B2B ×1.5, combo bonus, T-Spin detection (3-corner) ×2, soft +1 / hard +2
+- Levels every 10 lines with gravity curve, timer, pieces, persistent best score
+- Pause / Game Over / Start overlays, SFX + optional music via WebAudio, touch buttons + swipe controls, responsive layout
+
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+[0m→ [0mRead .
+[0m
+[0m← [0mWrite tetris.html
+Wrote file successfully.
+[0m
+[0m$ [0mrtk ls -la && python3 -c "from pathlib import Path; p=Path('tetris.html'); t=p.read_text(); print(len(t), 'bytes'); assert '<canvas id=\"board\"' in t; assert 'hardDrop' in t and 'ghostY' in t and 'KICKS' in t; print('checks ok')"
+755  .git/
+644  tetris.html  27.8K
+28320 bytes
+checks ok
+[0m

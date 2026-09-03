@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voxel Pagoda Garden</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; }
+canvas { display: block; }
+#ui {
+position: fixed; top: 20px; left: 20px; z-index: 10;
+background: rgba(0,0,0,0.6); padding: 15px 20px; border-radius: 12px;
+color: #fff; font-size: 14px; backdrop-filter: blur(10px);
+border: 1px solid rgba(255,255,255,0.1);
+}
+#ui h2 { font-size: 18px; margin-bottom: 8px; color: #f8b4d9; }
+#ui p { color: #aaa; font-size: 12px; line-height: 1.6; }
+#loading {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: #1a1a2e; display: flex; align-items: center; justify-content: center;
+z-index: 100; transition: opacity 0.5s;
+}
+#loading .spinner {
+width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1);
+border-top-color: #f8b4d9; border-radius: 50%;
+animation: spin 1s linear infinite;
+}
+#loading .text { color: #f8b4d9; font-size: 16px; margin-top: 20px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#controls {
+position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+z-index: 10; display: flex; gap: 10px;
+}
+#controls button {
+background: rgba(0,0,0,0.6); color: #f8b4d9; border: 1px solid rgba(248,180,217,0.3);
+padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+backdrop-filter: blur(10px); transition: all 0.2s;
+}
+#controls button:hover { background: rgba(248,180,217,0.2); }
+</style>
+</head>
+<body>
+<div id="loading"><div style="text-align:center"><div class="spinner"></div><div class="text">Building pagoda garden...</div></div></div>
+<div id="ui"><h2>Voxel Pagoda Garden</h2><p>Drag to orbit · Scroll to zoom<br>Click buttons to change view</p></div>
+<div id="controls">
+<button onclick="setCamera('overview')">Overview</button>
+<button onclick="setCamera('close')">Close-up</button>
+<button onclick="setCamera('top')">Top-down</button>
+<button onclick="setCamera('garden')">Garden View</button>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.003);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(60, 50, 60);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI / 2.1;
+controls.minDistance = 10;
+controls.maxDistance = 120;
+controls.target.set(0, 8, 0);
+
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.8);
+sun.position.set(40, 60, 30);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 200;
+sun.shadow.camera.left = -80;
+sun.shadow.camera.right = 80;
+sun.shadow.camera.top = 80;
+sun.shadow.camera.bottom = -80;
+scene.add(sun);
+
+const ambient = new THREE.AmbientLight(0x8ec8f0, 0.5);
+scene.add(ambient);
+
+const hemi = new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.6);
+scene.add(hemi);
+
+const VoxelGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+const palette = {
+red: new THREE.MeshStandardMaterial({ color: 0xc41e3a, roughness: 0.7 }),
+darkRed: new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 0.8 }),
+crimson: new THREE.MeshStandardMaterial({ color: 0xdc143c, roughness: 0.6 }),
+gold: new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.6 }),
+darkWood: new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 }),
+wood: new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.85 }),
+lightWood: new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 }),
+cream: new THREE.MeshStandardMaterial({ color: 0xfff8e7, roughness: 0.9 }),
+white: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }),
+stone: new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.9 }),
+darkStone: new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.95 }),
+lightStone: new THREE.MeshStandardMaterial({ color: 0xa0a0a0, roughness: 0.85 }),
+grass: new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.9 }),
+darkGrass: new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.9 }),
+lightGrass: new THREE.MeshStandardMaterial({ color: 0x66bb6a, roughness: 0.85 }),
+brown: new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 0.9 }),
+sand: new THREE.MeshStandardMaterial({ color: 0xf5deb3, roughness: 0.95 }),
+darkSand: new THREE.MeshStandardMaterial({ color: 0xdeb887, roughness: 0.9 }),
+water: new THREE.MeshStandardMaterial({ color: 0x4fc3f7, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.8 }),
+darkWater: new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.7 }),
+pink: new THREE.MeshStandardMaterial({ color: 0xffb6c1, roughness: 0.8 }),
+hotPink: new THREE.MeshStandardMaterial({ color: 0xff69b4, roughness: 0.7 }),
+deepPink: new THREE.MeshStandardMaterial({ color: 0xff1493, roughness: 0.6 }),
+lightPink: new THREE.MeshStandardMaterial({ color: 0xffc0cb, roughness: 0.8 }),
+green: new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.85 }),
+darkGreen: new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.9 }),
+lightGreen: new THREE.MeshStandardMaterial({ color: 0x81c784, roughness: 0.8 }),
+yellow: new THREE.MeshStandardMaterial({ color: 0xffeb3b, roughness: 0.8 }),
+orange: new THREE.MeshStandardMaterial({ color: 0xff9800, roughness: 0.8 }),
+purple: new THREE.MeshStandardMaterial({ color: 0x9c27b0, roughness: 0.7 }),
+blue: new THREE.MeshStandardMaterial({ color: 0x2196f3, roughness: 0.7 }),
+teal: new THREE.MeshStandardMaterial({ color: 0x009688, roughness: 0.7 }),
+autumnOrange: new THREE.MeshStandardMaterial({ color: 0xe65100, roughness: 0.8 }),
+autumnYellow: new THREE.MeshStandardMaterial({ color: 0xf9a825, roughness: 0.8 }),
+autumnRed: new THREE.MeshStandardMaterial({ color: 0xd84315, roughness: 0.8 }),
+bamboo: new THREE.MeshStandardMaterial({ color: 0x7cb342, roughness: 0.8 }),
+moss: new THREE.MeshStandardMaterial({ color: 0x558b2f, roughness: 0.95 }),
+lanternGlow: new THREE.MeshStandardMaterial({ color: 0xfff176, roughness: 0.3, emissive: 0xfff176, emissiveIntensity: 0.5 }),
+roofTile: new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.7 }),
+};
+
+const instancedMeshes = {};
+const tempMatrix = new THREE.Matrix4();
+const tempColor = new THREE.Color();
+
+Object.keys(palette).forEach(name => {
+instancedMeshes[name] = new THREE.InstancedMesh(VoxelGeometry, palette[name], 50000);
+instancedMeshes[name].castShadow = true;
+instancedMeshes[name].receiveShadow = true;
+instancedMeshes[name].count = 0;
+scene.add(instancedMeshes[name]);
+});
+
+function voxel(x, y, z, mat, sx=1, sy=1, sz=1) {
+const mesh = instancedMeshes[mat];
+if (!mesh) return;
+const idx = mesh.count;
+tempMatrix.makeScale(sx, sy, sz);
+tempMatrix.setPosition(x, y, z);
+mesh.setMatrixAt(idx, tempMatrix);
+mesh.count++;
+}
+
+function voxBox(x, y, z, w, h, d, mat) {
+for (let dx = 0; dx < w; dx++)
+for (let dy = 0; dy < h; dy++)
+for (let dz = 0; dz < d; dz++)
+voxel(x + dx, y + dy, z + dz, mat);
+}
+
+function voxPyramid(x, y, z, size, mat, height) {
+for (let i = 0; i < height; i++) {
+const s = size - i;
+for (let dx = 0; dx < s; dx++)
+for (let dz = 0; dz < s; dz++)
+voxel(x + dx, y + i, z + dz, mat);
+}
+}
+
+function voxDisc(x, y, z, radius, mat, filled=true) {
+for (let dx = -radius; dx <= radius; dx++) {
+for (let dz = -radius; dz <= radius; dz++) {
+const dist = Math.sqrt(dx*dx + dz*dz);
+if (filled ? dist <= radius : (dist <= radius && dist > radius - 1.5)) {
+voxel(x + dx, y, z + dz, mat);
+}
+}
+}
+}
+
+// Ground
+for (let x = -60; x <= 60; x++) {
+for (let z = -60; z <= 60; z++) {
+const dist = Math.sqrt(x*x + z*z);
+if (dist < 55) {
+const grassType = Math.random() > 0.5 ? 'grass' : (Math.random() > 0.5 ? 'darkGrass' : 'lightGrass');
+voxel(x, -1, z, grassType);
+}
+}
+}
+
+// Pagoda base platform
+voxBox(-8, 0, -8, 17, 1, 17, 'darkStone');
+voxBox(-7, 1, -7, 15, 1, 15, 'stone');
+voxBox(-6, 2, -6, 13, 1, 13, 'lightStone');
+
+// Pagoda floors
+function pagodaFloor(cx, cz, y, size, roofOverhang) {
+const half = Math.floor(size / 2);
+for (let dx = -half; dx <= half; dx++) {
+for (let dz = -half; dz <= half; dz++) {
+voxel(cx + dx, y, cz + dz, 'cream');
+}
+}
+// Roof
+const roofSize = half + roofOverhang;
+for (let i = 0; i < roofOverhang + 1; i++) {
+const rs = roofSize + (roofOverhang - i);
+for (let dx = -rs; dx <= rs; dx++) {
+for (let dz = -rs; dz <= rs; dz++) {
+const dist = Math.max(Math.abs(dx), Math.abs(dz));
+if (dist >= rs - 1 || (i === roofOverhang)) {
+voxel(cx + dx, y + 1 + i, cz + dz, i === roofOverhang ? 'roofTile' : 'darkRed');
+}
+}
+}
+// Roof edge decoration
+for (let dx = -rs-1; dx <= rs+1; dx++) {
+for (let dz = -rs-1; dz <= rs+1; dz++) {
+if (Math.abs(Math.abs(dx) - (rs+1)) < 0.5 || Math.abs(Math.abs(dz) - (rs+1)) < 0.5) {
+if (Math.random() > 0.5) voxel(cx + dx, y + 1 + i, cz + dz, 'gold');
+}
+}
+}
+}
+// Pillars
+const pillarDist = half - 1;
+const pillarPositions = [
+[-pillarDist, -pillarDist], [pillarDist, -pillarDist],
+[-pillarDist, pillarDist], [pillarDist, pillarDist]
+];
+pillarPositions.forEach(([px, pz]) => {
+for (let py = 0; py < 3; py++) {
+voxel(cx + px, y + py, cz + pz, 'darkWood');
+}
+});
+}
+
+// Floor 1 (largest)
+pagodaFloor(0, 0, 3, 11, 2);
+// Floor 2
+pagodaFloor(0, 0, 8, 9, 2);
+// Floor 3
+pagodaFloor(0, 0, 13, 7, 2);
+// Floor 4
+pagodaFloor(0, 0, 18, 5, 2);
+// Floor 5
+pagodaFloor(0, 0, 23, 4, 1);
+
+// Pagoda spire
+for (let i = 0; i < 8; i++) {
+const s = Math.max(1, 3 - Math.floor(i/2));
+voxBox(0, 26 + i, 0, s, 1, s, i < 2 ? 'darkWood' : 'gold');
+}
+voxel(0, 34, 0, 'gold');
+voxel(0, 35, 0, 'gold');
+voxel(-1, 35, 0, 'gold');
+voxel(1, 35, 0, 'gold');
+voxel(0, 35, -1, 'gold');
+voxel(0, 35, 1, 'gold');
+
+// Cherry blossom tree function
+function cherryBlossomTree(x, z, size, blossomColor) {
+// Trunk
+const trunkH = 4 + Math.floor(Math.random() * 3);
+for (let i = 0; i < trunkH; i++) {
+voxel(x, i, z, 'darkWood');
+if (i > trunkH - 4) {
+voxel(x + 1, i, z, 'wood');
+voxel(x, i, z + 1, 'wood');
+}
+}
+// Branches and blossoms
+const branchDirs = [
+[1, 0], [-1, 0], [0, 1], [0, -1],
+[1, 1], [-1, -1], [1, -1], [-1, 1]
+];
+for (let b = 0; b < 6; b++) {
+const dir = branchDirs[b % 8];
+const bx = x + dir[0] * (1 + Math.floor(Math.random() * 2));
+const bz = z + dir[1] * (1 + Math.floor(Math.random() * 2));
+const by = trunkH - 2 + Math.floor(Math.random() * 3);
+// Branch
+voxel(bx, by, bz, 'brown');
+voxel(bx + dir[0], by, bz + dir[1], 'brown');
+// Blossom cluster
+const bSize = size + Math.floor(Math.random() * 2);
+for (let dx = -bSize; dx <= bSize; dx++) {
+for (let dy = -1; dy <= bSize; dy++) {
+for (let dz = -bSize; dz <= bSize; dz++) {
+const dist = Math.sqrt(dx*dx + dy*dy*1.5 + dz*dz);
+if (dist <= bSize && Math.random() > 0.2) {
+const colors = [blossomColor, 'lightPink', 'hotPink', 'deepPink'];
+const c = colors[Math.floor(Math.random() * colors.length)];
+voxel(bx + dir[0] * 2 + dx, by + dy + 1, bz + dir[1] * 2 + dz, c);
+}
+}
+}
+}
+}
+
+// Main cherry blossom trees
+cherryBlossomTree(-20, -15, 3, 'pink');
+cherryBlossomTree(18, -12, 4, 'hotPink');
+cherryBlossomTree(-15, 18, 3, 'deepPink');
+cherryBlossomTree(22, 20, 3, 'pink');
+cherryBlossomTree(-25, 5, 2, 'lightPink');
+cherryBlossomTree(12, -25, 3, 'hotPink');
+
+// Autumn tree function
+function autumnTree(x, z, size) {
+const trunkH = 5 + Math.floor(Math.random() * 3);
+for (let i = 0; i < trunkH; i++) {
+voxel(x, i, z, 'wood');
+}
+const leafColors = ['autumnOrange', 'autumnYellow', 'autumnRed', 'orange', 'yellow'];
+for (let dx = -size; dx <= size; dx++) {
+for (let dy = -1; dy <= size; dy++) {
+for (let dz = -size; dz <= size; dz++) {
+const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+if (dist <= size && Math.random() > 0.15) {
+const c = leafColors[Math.floor(Math.random() * leafColors.length)];
+voxel(x + dx, trunkH + dy, z + dz, c);
+}
+}
+}
+}
+
+autumnTree(-30, -8, 3);
+autumnTree(28, 8, 4);
+autumnTree(-8, 30, 3);
+
+// Evergreen tree function
+function evergreenTree(x, z, size, h) {
+for (let i = 0; i < h; i++) {
+voxel(x, i, z, 'wood');
+}
+for (let layer = 0; layer < 4; layer++) {
+const layerSize = size + 1 - layer;
+const layerY = h - 2 + layer;
+for (let dx = -layerSize; dx <= layerSize; dx++) {
+for (let dz = -layerSize; dz <= layerSize; dz++) {
+const dist = Math.max(Math.abs(dx), Math.abs(dz));
+if (dist <= layerSize) {
+const c = Math.random() > 0.3 ? 'darkGreen' : 'green';
+voxel(x + dx, layerY, z + dz, c);
+}
+}
+}
+}
+}
+
+evergreenTree(-35, -25, 2, 6);
+evergreenTree(35, -20, 3, 7);
+evergreenTree(-28, 28, 2, 5);
+evergreenTree(30, 25, 3, 6);
+
+// Bamboo grove
+function bambooCluster(cx, cz, count) {
+for (let i = 0; i < count; i++) {
+const bx = cx + Math.floor(Math.random() * 4) - 2;
+const bz = cz + Math.floor(Math.random() * 4) - 2;
+const height = 8 + Math.floor(Math.random() * 6);
+for (let y = 0; y < height; y++) {
+voxel(bx, y, bz, 'bamboo');
+if (y > 0 && y % 3 === 0) {
+voxel(bx + 1, y, bz, 'lightGreen');
+voxel(bx - 1, y, bz, 'lightGreen');
+voxel(bx, y, bz + 1, 'lightGreen');
+voxel(bx, y, bz - 1, 'lightGreen');
+}
+}
+// Top leaves
+for (let dy = 0; dy < 3; dy++) {
+for (let dx = -1; dx <= 1; dx++) {
+for (let dz = -1; dz <= 1; dz++) {
+if (Math.random() > 0.3) {
+voxel(bx + dx, height + dy, bz + dz, Math.random() > 0.5 ? 'green' : 'lightGreen');
+}
+}
+}
+}
+}
+}
+
+bambooCluster(-40, 0, 8);
+bambooCluster(-38, 5, 6);
+bambooCluster(38, -5, 7);
+
+// Koi pond
+const pondCenter = [25, -20];
+const pondRadius = 8;
+for (let dx = -pondRadius-1; dx <= pondRadius+1; dx++) {
+for (let dz = -pondRadius-1; dz <= pondRadius+1; dz++) {
+const dist = Math.sqrt(dx*dx + dz*dz);
+if (dist <= pondRadius + 1) {
+voxel(pondCenter[0] + dx, -1, pondCenter[1] + dz, 'darkStone');
+}
+if (dist <= pondRadius) {
+voxel(pondCenter[0] + dx, 0, pondCenter[1] + dz, 'water');
+if (dist <= pondRadius - 2) {
+voxel(pondCenter[0] + dx, 0, pondCenter[1] + dz, 'darkWater');
+}
+}
+}
+}
+// Lily pads
+for (let i = 0; i < 6; i++) {
+const angle = Math.random() * Math.PI * 2;
+const r = 2 + Math.random() * 4;
+const lx = Math.floor(pondCenter[0] + Math.cos(angle) * r);
+const lz = Math.floor(pondCenter[1] + Math.sin(angle) * r);
+voxel(lx, 0.5, lz, 'lightGreen');
+voxel(lx + 1, 0.5, lz, 'green');
+voxel(lx, 0.5, lz + 1, 'green');
+}
+// Koi fish (simplified)
+for (let i = 0; i < 3; i++) {
+const angle = Math.random() * Math.PI * 2;
+const r = 1 + Math.random() * 5;
+const kx = Math.floor(pondCenter[0] + Math.cos(angle) * r);
+const kz = Math.floor(pondCenter[1] + Math.sin(angle) * r);
+voxel(kx, 0.3, kz, 'orange');
+voxel(kx + 1, 0.3, kz, 'orange');
+voxel(kx - 1, 0.3, kz, 'white');
+}
+
+// Zen garden sand area
+for (let x = -45; x <= -15; x++) {
+for (let z = 20; z <= 45; z++) {
+const inArea = Math.abs(x + 30) <= 14 && Math.abs(z - 32) <= 11;
+if (inArea) {
+const sandType = ((x + z) % 3 === 0) ? 'darkSand' : 'sand';
+voxel(x, -1, z, sandType);
+}
+}
+}
+// Raked sand patterns (concentric circles)
+for (let r = 2; r <= 8; r += 2) {
+for (let angle = 0; angle < Math.PI * 2; angle += 0.15) {
+const sx = Math.floor(-30 + Math.cos(angle) * r);
+const sz = Math.floor(32 + Math.sin(angle) * r);
+voxel(sx, -0.5, sz, 'darkSand');
+}
+}
+// Zen rocks
+voxel(-30, 0, 32, 'darkStone');
+voxel(-29, 0, 32, 'darkStone');
+voxel(-30, 1, 32, 'stone');
+voxel(-25, 0, 30, 'stone');
+voxel(-25, 0, 31, 'darkStone');
+voxel(-35, 0, 34, 'stone');
+voxel(-35, 1, 34, 'darkStone');
+
+// Stone lanterns
+function stoneLantern(x, z) {
+voxBox(x, 0, z, 1, 1, 1, 'stone');
+voxBox(x, 1, z, 1, 1, 1, 'lightStone');
+voxBox(x - 1, 2, z - 1, 3, 1, 3, 'stone');
+voxel(x, 3, z, 'lanternGlow');
+voxel(x, 4, z, 'stone');
+voxBox(x - 1, 5, z - 1, 3, 1, 3, 'darkStone');
+voxel(x, 6, z, 'darkStone');
+voxel(x, 7, z, 'darkStone');
+}
+
+stoneLantern(-12, 12);
+stoneLantern(12, -12);
+stoneLantern(-12, -20);
+stoneLantern(18, 5);
+stoneLantern(-5, 25);
+stoneLantern(5, -30);
+
+// Stone path
+const pathPoints = [
+[-10, 0], [-8, -2], [-6, -4], [-4, -5], [-2, -6], [0, -8],
+[2, -10], [4, -12], [6, -14], [8, -16], [10, -18], [12, -20]
+];
+pathPoints.forEach(([px, pz]) => {
+voxel(px, 0, pz, 'darkStone');
+voxel(px + 1, 0, pz, 'stone');
+voxel(px, 0, pz + 1, 'stone');
+voxel(px - 1, 0, pz, 'lightStone');
+});
+
+// Bridge over small stream
+for (let x = -3; x <= 3; x++) {
+voxel(x, 0, -8, 'wood');
+voxel(x, 1, -8, 'wood');
+voxel(x, 2, -8, 'darkWood');
+}
+voxel(-3, 1, -8, 'darkWood');
+voxel(3, 1, -8, 'darkWood');
+voxel(-3, 2, -8, 'darkWood');
+voxel(3, 2, -8, 'darkWood');
+
+// Flowers scattered around
+function addFlowerPatch(cx, cz, count, flowerMat) {
+for (let i = 0; i < count; i++) {
+const fx = cx + Math.floor(Math.random() * 6) - 3;
+const fz = cz + Math.floor(Math.random() * 6) - 3;
+voxel(fx, 0, fz, 'green');
+voxel(fx, 1, fz, flowerMat);
+}
+}
+addFlowerPatch(-18, -8, 12, 'yellow');
+addFlowerPatch(15, 15, 10, 'purple');
+addFlowerPatch(-22, 10, 8, 'blue');
+addFlowerPatch(8, -22, 10, 'orange');
+addFlowerPatch(-10, -25, 8, 'teal');
+addFlowerPatch(25, -5, 6, 'yellow');
+
+// Mushroom clusters
+function mushroomCluster(cx, cz, count) {
+for (let i = 0; i < count; i++) {
+const mx = cx + Math.floor(Math.random() * 3);
+const mz = cz + Math.floor(Math.random() * 3);
+voxel(mx, 0, mz, 'cream');
+voxel(mx, 1, mz, 'cream');
+voxel(mx, 2, mz, Math.random() > 0.5 ? 'red' : 'orange');
+voxel(mx - 1, 2, mz, Math.random() > 0.5 ? 'red' : 'darkRed');
+voxel(mx + 1, 2, mz, Math.random() > 0.5 ? 'red' : 'orange');
+}
+}
+mushroomCluster(-35, -15, 4);
+mushroomCluster(32, 18, 3);
+
+// Small shrine near pond
+voxBox(20, 0, -28, 5, 2, 5, 'darkStone');
+voxBox(21, 2, -27, 3, 2, 3, 'cream');
+voxel(21, 4, -27, 'darkWood');
+voxel(23, 4, -27, 'darkWood');
+voxBox(20, 5, -28, 5, 1, 5, 'darkRed');
+voxBox(21, 6, -27, 3, 1, 3, 'darkRed');
+voxel(22, 7, -27, 'gold');
+
+// Falling cherry blossom petals (particles)
+const petalCount = 200;
+const petalGeo = new THREE.BufferGeometry();
+const petalPositions = new Float32Array(petalCount * 3);
+const petalVelocities = [];
+for (let i = 0; i < petalCount; i++) {
+petalPositions[i*3] = (Math.random() - 0.5) * 80;
+petalPositions[i*3+1] = Math.random() * 40;
+petalPositions[i*3+2] = (Math.random() - 0.5) * 80;
+petalVelocities.push({
+vx: (Math.random() - 0.5) * 0.05,
+vy: -0.02 - Math.random() * 0.03,
+vz: (Math.random() - 0.5) * 0.05,
+phase: Math.random() * Math.PI * 2
+});
+}
+petalGeo.setAttribute('position', new THREE.BufferAttribute(petalPositions, 3));
+const petalMat = new THREE.PointsMaterial({
+color: 0xffb6c1, size: 0.4, transparent: true, opacity: 0.8,
+sizeAttenuation: true
+});
+const petals = new THREE.Points(petalGeo, petalMat);
+scene.add(petals);
+
+// Pond reflection effect - subtle water shimmer
+const waterGeo = new THREE.PlaneGeometry(pondRadius * 2, pondRadius * 2);
+waterGeo.rotateX(-Math.PI / 2);
+const waterMesh = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({
+color: 0x4fc3f7, transparent: true, opacity: 0.3, roughness: 0.1, metalness: 0.5
+}));
+waterMesh.position.set(pondCenter[0], 0.1, pondCenter[1]);
+scene.add(waterMesh);
+
+// Small decorative fence around garden
+for (let i = -50; i <= 50; i += 3) {
+if (Math.abs(i) > 40 || Math.random() > 0.3) {
+voxel(i, 0, -50, 'darkWood');
+voxel(i, 1, -50, 'wood');
+voxel(-50, 0, i, 'darkWood');
+voxel(-50, 1, i, 'wood');
+voxel(50, 0, i, 'darkWood');
+voxel(50, 1, i, 'wood');
+voxel(i, 0, 50, 'darkWood');
+voxel(i, 1, 50, 'wood');
+}
+}
+
+// Update all instanced meshes
+Object.values(instancedMeshes).forEach(mesh => {
+if (mesh.count > 0) {
+mesh.instanceMatrix.needsUpdate = true;
+mesh.count = mesh.count;
+}
+});
+
+// Camera presets
+function setCamera(preset) {
+const targets = {
+overview: { pos: [60, 50, 60], target: [0, 8, 0] },
+close: { pos: [15, 12, 15], target: [0, 10, 0] },
+top: { pos: [0, 80, 0.1], target: [0, 0, 0] },
+garden: { pos: [-30, 15, 25], target: [-10, 5, 15] }
+};
+const t = targets[preset];
+if (!t) return;
+camera.position.set(...t.pos);
+controls.target.set(...t.target);
+}
+window.setCamera = setCamera;
+
+// Animation
+let time = 0;
+function animate() {
+requestAnimationFrame(animate);
+time += 0.01;
+controls.update();
+
+// Animate petals
+const pos = petals.geometry.attributes.position.array;
+for (let i = 0; i < petalCount; i++) {
+const v = petalVelocities[i];
+pos[i*3] += v.vx + Math.sin(time + v.phase) * 0.02;
+pos[i*3+1] += v.vy;
+pos[i*3+2] += v.vz + Math.cos(time + v.phase) * 0.02;
+if (pos[i*3+1] < 0) {
+pos[i*3] = (Math.random() - 0.5) * 80;
+pos[i*3+1] = 30 + Math.random() * 10;
+pos[i*3+2] = (Math.random() - 0.5) * 80;
+}
+}
+petals.geometry.attributes.position.needsUpdate = true;
+
+// Subtle water animation
+waterMesh.position.y = 0.1 + Math.sin(time * 2) * 0.05;
+
+renderer.render(scene, camera);
+}
+
+// Hide loading
+setTimeout(() => {
+document.getElementById('loading').style.opacity = '0';
+setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+}, 500);
+
+animate();
+
+window.addEventListener('resize', () => {
+camera.aspect = innerWidth / innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

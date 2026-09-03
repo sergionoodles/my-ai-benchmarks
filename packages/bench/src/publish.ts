@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  PublishedIndexSchema,
+  PublishedEntrySchema,
   RunResultSchema,
-  type PublishedIndex,
+  type PublishedEntry,
 } from "@lab/schema";
 import { judgeModel } from "./config.js";
-import { latestRunId, loadModels, loadTasks } from "./loaders.js";
+import { loadModels, loadTasks, readPairResult } from "./loaders.js";
 import { codexAdapter } from "./harnesses/codex.js";
 import { grokAdapter } from "./harnesses/grok.js";
 import { opencodeAdapter } from "./harnesses/opencode.js";
@@ -17,82 +17,108 @@ function copyIfExists(src: string, dest: string): void {
   fs.copyFileSync(src, dest);
 }
 
-export async function publishLatest(opts: {
+export type PublishSelector =
+  | { kind: "all" }
+  | { kind: "model"; model: string }
+  | { kind: "pair"; model: string; task: string };
+
+export async function publishPairs(opts: {
   root: string;
   runsDir: string;
   tasksDir: string;
   modelsDir: string;
   webResultsDir: string;
-  runId?: string;
-}): Promise<string> {
-  const runId = opts.runId ?? latestRunId(opts.runsDir);
-  if (!runId) throw new Error(`no runs found in ${opts.runsDir} — run 'bench run' first`);
-
+  selector: PublishSelector;
+}): Promise<string[]> {
   const models = loadModels(opts.modelsDir);
   const tasks = loadTasks(opts.tasksDir);
+  if (models.length === 0) throw new Error(`no models in ${opts.modelsDir}`);
+  if (tasks.length === 0) throw new Error(`no tasks in ${opts.tasksDir}`);
 
-  // Collect result.json files under runs/<modelId>/<taskId>/<runId>.
-  const results = [];
-  for (const task of tasks) {
-    for (const model of models) {
-      const p = path.join(opts.runsDir, model.id, task.config.id, runId, "result.json");
-      if (fs.existsSync(p)) {
-        results.push(RunResultSchema.parse(JSON.parse(fs.readFileSync(p, "utf8"))));
-      }
+  const selector = opts.selector;
+  let pairs: Array<{ modelId: string; taskId: string }>;
+  if (selector.kind === "all") {
+    pairs = models.flatMap((m) => tasks.map((t) => ({ modelId: m.id, taskId: t.config.id })));
+  } else if (selector.kind === "model") {
+    if (!models.some((m) => m.id === selector.model)) {
+      throw new Error(`unknown model: ${selector.model}`);
     }
+    pairs = tasks.map((t) => ({ modelId: selector.model, taskId: t.config.id }));
+  } else {
+    pairs = [{ modelId: selector.model, taskId: selector.task }];
   }
-  if (results.length === 0) throw new Error(`no results for run ${runId} in ${opts.runsDir}`);
-
-  // Fresh snapshot dir.
-  fs.rmSync(opts.webResultsDir, { recursive: true, force: true });
-  fs.mkdirSync(opts.webResultsDir, { recursive: true });
-
-  // Copy artifacts per (task, model) and rewrite artifact refs to public URLs.
-  const published = results.map((r) => {
-    const srcDir = path.join(opts.runsDir, r.modelId, r.taskId, r.runId);
-    const destDir = path.join(opts.webResultsDir, r.taskId, r.modelId);
-    fs.mkdirSync(destDir, { recursive: true });
-    const artifacts: Record<string, string> = {};
-    if (r.artifacts.html) {
-      copyIfExists(path.join(srcDir, r.artifacts.html), path.join(destDir, "preview.html"));
-      artifacts.html = `results/${r.taskId}/${r.modelId}/preview.html`;
-    }
-    if (r.artifacts.screenshot) {
-      copyIfExists(path.join(srcDir, r.artifacts.screenshot), path.join(destDir, "screenshot.png"));
-      artifacts.screenshot = `results/${r.taskId}/${r.modelId}/screenshot.png`;
-    }
-    if (r.artifacts.log) {
-      copyIfExists(path.join(srcDir, r.artifacts.log), path.join(destDir, "agent.log"));
-      artifacts.log = `results/${r.taskId}/${r.modelId}/agent.log`;
-    }
-    return { ...r, artifacts };
-  });
 
   const [codex, opencode, grok] = await Promise.all([
     codexAdapter.version().catch(() => undefined),
     opencodeAdapter.version().catch(() => undefined),
     grokAdapter.version().catch(() => undefined),
   ]);
-
-  const index: PublishedIndex = {
-    publishedAt: new Date().toISOString(),
-    runId,
-    judgeModel: judgeModel(),
-    harnessVersions: {
-      ...(codex ? { codex } : {}),
-      ...(opencode ? { opencode } : {}),
-      ...(grok ? { grok } : {}),
-    },
-    models: models
-      .filter((m) => published.some((r) => r.modelId === m.id))
-      .map((m) => ({ id: m.id, displayName: m.displayName, harness: m.harness })),
-    tasks: tasks
-      .filter((t) => published.some((r) => r.taskId === t.config.id))
-      .map((t) => ({ id: t.config.id, title: t.config.title, kind: t.config.kind })),
-    results: published,
+  const harnessVersions = {
+    ...(codex ? { codex } : {}),
+    ...(opencode ? { opencode } : {}),
+    ...(grok ? { grok } : {}),
   };
-  const parsed = PublishedIndexSchema.parse(index);
-  const indexPath = path.join(opts.webResultsDir, "index.json");
-  fs.writeFileSync(indexPath, JSON.stringify(parsed, null, 2));
-  return indexPath;
+
+  const written: string[] = [];
+  const missing: string[] = [];
+  for (const { modelId, taskId } of pairs) {
+    const found = readPairResult(opts.runsDir, modelId, taskId);
+    if (!found) {
+      missing.push(`${modelId}/${taskId}`);
+      continue;
+    }
+    const r = RunResultSchema.parse(found.result);
+    const model = models.find((m) => m.id === modelId);
+    const task = tasks.find((t) => t.config.id === taskId);
+    if (!model || !task) {
+      missing.push(`${modelId}/${taskId}`);
+      continue;
+    }
+
+    // Incremental publish: only touch this pair's folder (override).
+    const destDir = path.join(opts.webResultsDir, taskId, modelId);
+    fs.mkdirSync(destDir, { recursive: true });
+    const artifacts: Record<string, string> = {};
+    if (r.artifacts.html) {
+      copyIfExists(path.join(found.dir, r.artifacts.html), path.join(destDir, "preview.html"));
+      artifacts.html = `results/${taskId}/${modelId}/preview.html`;
+    }
+    if (r.artifacts.screenshot) {
+      copyIfExists(path.join(found.dir, r.artifacts.screenshot), path.join(destDir, "screenshot.png"));
+      artifacts.screenshot = `results/${taskId}/${modelId}/screenshot.png`;
+    }
+    if (r.artifacts.log) {
+      copyIfExists(path.join(found.dir, r.artifacts.log), path.join(destDir, "agent.log"));
+      artifacts.log = `results/${taskId}/${modelId}/agent.log`;
+    }
+
+    const entry: PublishedEntry = {
+      publishedAt: new Date().toISOString(),
+      judgeModel: judgeModel(),
+      harnessVersions,
+      model: { id: model.id, displayName: model.displayName, harness: model.harness },
+      task: { id: task.config.id, title: task.config.title, kind: task.config.kind },
+      result: { ...r, artifacts },
+    };
+    const parsed = PublishedEntrySchema.parse(entry);
+    const outPath = path.join(destDir, "result.json");
+    fs.writeFileSync(outPath, JSON.stringify(parsed, null, 2));
+    written.push(outPath);
+  }
+
+  // The old single huge index.json is gone — remove it if left over.
+  const legacyIndex = path.join(opts.webResultsDir, "index.json");
+  if (fs.existsSync(legacyIndex)) fs.rmSync(legacyIndex);
+
+  if (written.length === 0) {
+    throw new Error(
+      `no results to publish in ${opts.runsDir}` +
+        (missing.length ? ` (missing: ${missing.join(", ")})` : "") +
+        ` — run 'bench run' first`,
+    );
+  }
+  if (missing.length > 0) {
+    console.warn(`warn: no run found for ${missing.join(", ")} — skipped`);
+  }
+  return written;
 }

@@ -1,0 +1,1 @@
+Build a mobile-first plant watering tracker that feels like a native app, not a website. It should work completely offline using local storage. Users can add plants, set watering intervals, and mark plants as watered. The UI should be touch-friendly with large tap targets and smooth interactions. Data persists between sessions. Keep it simple and focused on the core workflow.

@@ -1,5 +1,7 @@
 // Local mirror of packages/schema scoring + result types so the static site
-// stays dependency-free (reads only public/results/index.json at runtime).
+// stays dependency-free. Published runs live at
+// public/results/<task-id>/<model-id>/result.json (one JSON per run) and are
+// aggregated at build time via import.meta.glob — there is no index.json.
 
 export interface CheckResult {
   id: string;
@@ -22,13 +24,33 @@ export interface RunResult {
   artifacts: { html?: string; screenshot?: string; log?: string };
 }
 
-export interface PublishedIndex {
+export interface PublishedModel {
+  id: string;
+  displayName: string;
+  harness: string;
+}
+
+export interface PublishedTask {
+  id: string;
+  title: string;
+  kind: string;
+}
+
+export interface PublishedEntry {
   publishedAt: string;
-  runId: string;
   judgeModel: string;
   harnessVersions: { codex?: string; opencode?: string; grok?: string };
-  models: Array<{ id: string; displayName: string; harness: string }>;
-  tasks: Array<{ id: string; title: string; kind: string }>;
+  model: PublishedModel;
+  task: PublishedTask;
+  result: RunResult;
+}
+
+export interface PublishedIndex {
+  publishedAt: string;
+  judgeModel: string;
+  harnessVersions: { codex?: string; opencode?: string; grok?: string };
+  models: PublishedModel[];
+  tasks: PublishedTask[];
   results: RunResult[];
 }
 
@@ -39,8 +61,54 @@ export interface TaskWeights {
 }
 
 // Default weights used for display when task.json isn't published.
-// The publish step could embed weights later; for v1 the site uses these.
 export const DEFAULT_WEIGHTS: TaskWeights = { checks: 0.4, llmJudge: 0.4, manual: 0.2 };
+
+/** Aggregate per-run entries (public/results/<task>/<model>/result.json). */
+export function indexFromEntries(entries: PublishedEntry[]): PublishedIndex | null {
+  if (entries.length === 0) return null;
+  const models = new Map<string, PublishedModel>();
+  const tasks = new Map<string, PublishedTask>();
+  for (const e of entries) {
+    if (!models.has(e.model.id)) models.set(e.model.id, e.model);
+    if (!tasks.has(e.task.id)) tasks.set(e.task.id, e.task);
+  }
+  const publishedAt = entries.map((e) => e.publishedAt).sort().at(-1) ?? entries[0].publishedAt;
+  const harnessVersions: PublishedIndex["harnessVersions"] = {};
+  for (const e of entries) Object.assign(harnessVersions, e.harnessVersions);
+  return {
+    publishedAt,
+    judgeModel: entries[0].judgeModel,
+    harnessVersions,
+    models: [...models.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    tasks: [...tasks.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    results: entries.map((e) => e.result),
+  };
+}
+
+/**
+ * Load every published run bundled at build time.
+ * Pattern mirrors the publish layout: results/<task-id>/<model-id>/result.json.
+ */
+export function loadBundledEntries(): PublishedEntry[] {
+  const modules = import.meta.glob<{ default: PublishedEntry }>(
+    "../../public/results/*/*/result.json",
+    { eager: true },
+  );
+  return Object.values(modules).map((m) => m.default);
+}
+
+/** Legacy fallback: the old single public/results/index.json. */
+export async function fetchLegacyIndex(): Promise<PublishedIndex | null> {
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}results/index.json`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const index = (await res.json()) as PublishedIndex;
+    if (!index.results || index.results.length === 0) return null;
+    return index;
+  } catch {
+    return null;
+  }
+}
 
 export function checksScore(checks: CheckResult[]): number | null {
   const total = checks.reduce((s, c) => s + c.weight, 0);

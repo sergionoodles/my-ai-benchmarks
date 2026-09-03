@@ -1,0 +1,17 @@
+{
+  "id": "plant-watering-tracker",
+  "title": "Plant watering tracker",
+  "kind": "ui",
+  "description": "Build an offline, mobile-first plant watering tracker with local persistence and a focused watering workflow.",
+  "weights": { "checks": 0.4, "llmJudge": 0.4, "manual": 0.2 },
+  "timeoutSec": 600,
+  "screenshot": true,
+  "iframePath": "preview.html",
+  "checks": [
+    { "id": "preview-exists", "type": "file-exists", "weight": 1, "config": { "path": "preview.html" } },
+    { "id": "uses-local-storage", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "localStorage" } },
+    { "id": "supports-adding-plants", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "plant" } },
+    { "id": "supports-watering", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "water" } },
+    { "id": "supports-intervals", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "interval" } }
+  ]
+}

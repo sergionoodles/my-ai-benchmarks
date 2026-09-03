@@ -1,0 +1,17 @@
+{
+  "id": "tauri-weather-tray",
+  "title": "Tauri weather tray app",
+  "kind": "mixed",
+  "description": "Build a minimal, calm weather desktop app with a system-tray entry and a compact current-conditions window.",
+  "weights": { "checks": 0.4, "llmJudge": 0.4, "manual": 0.2 },
+  "timeoutSec": 900,
+  "screenshot": true,
+  "iframePath": "preview.html",
+  "checks": [
+    { "id": "preview-exists", "type": "file-exists", "weight": 1, "config": { "path": "preview.html" } },
+    { "id": "uses-tauri", "type": "contains", "weight": 1, "config": { "path": "package.json", "pattern": "tauri" } },
+    { "id": "has-tray-integration", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "tray" } },
+    { "id": "shows-temperature", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "temperature" } },
+    { "id": "shows-conditions", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "condition" } }
+  ]
+}

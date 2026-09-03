@@ -21,10 +21,3 @@ export const paths = (root = repoRoot()) => ({
 
 export const judgeModel = () =>
   process.env.BENCH_JUDGE_MODEL ?? "stub-judge-v0";
-
-export function newRunId(now = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const d = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}`;
-  const t = `${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
-  return `${d}-${t}`;
-}
