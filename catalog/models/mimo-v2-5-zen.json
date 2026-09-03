@@ -1,0 +1,8 @@
+{
+  "id": "mimo-v2-5-zen",
+  "displayName": "MiMo V2.5 (Zen, free)",
+  "harness": "opencode",
+  "model": "opencode/mimo-v2.5-free",
+  "timeoutSec": 900,
+  "notes": "Free OpenCode Zen model."
+}

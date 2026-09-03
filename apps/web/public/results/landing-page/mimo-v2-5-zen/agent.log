@@ -1,0 +1,2 @@
+$ opencode run --model opencode/mimo-v2.5-free [STUB: set BENCH_LIVE_HARNESS=1 for a real run]
+Prompt was 525 chars; workspace left untouched.

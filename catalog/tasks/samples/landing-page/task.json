@@ -1,0 +1,16 @@
+{
+  "id": "landing-page",
+  "title": "Landing page",
+  "kind": "ui",
+  "description": "Build a small responsive product landing page as a single HTML file.",
+  "weights": { "checks": 0.4, "llmJudge": 0.4, "manual": 0.2 },
+  "timeoutSec": 600,
+  "screenshot": true,
+  "iframePath": "preview.html",
+  "fixturePath": "fixture",
+  "checks": [
+    { "id": "html-exists", "type": "file-exists", "weight": 1, "config": { "path": "preview.html" } },
+    { "id": "has-hero", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "<h1" } },
+    { "id": "has-cta", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "<button" } }
+  ]
+}

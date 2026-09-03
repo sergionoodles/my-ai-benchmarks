@@ -1,0 +1,16 @@
+{
+  "id": "greenfield-script",
+  "title": "Greenfield script",
+  "kind": "code",
+  "description": "Write a dependency-free Node script that summarizes a JSON log file.",
+  "weights": { "checks": 0.6, "llmJudge": 0.3, "manual": 0.1 },
+  "timeoutSec": 600,
+  "screenshot": false,
+  "iframePath": "preview.html",
+  "fixturePath": "fixture",
+  "checks": [
+    { "id": "script-exists", "type": "file-exists", "weight": 1, "config": { "path": "summarize.mjs" } },
+    { "id": "reads-stdin-or-arg", "type": "contains", "weight": 1, "config": { "path": "summarize.mjs", "pattern": "argv" } },
+    { "id": "outputs-json", "type": "contains", "weight": 1, "config": { "path": "summarize.mjs", "pattern": "JSON.stringify" } }
+  ]
+}

@@ -1,0 +1,5 @@
+{"level":"info","msg":"boot","ts":"2026-01-01T00:00:00Z"}
+{"level":"info","msg":"ready","ts":"2026-01-01T00:00:01Z"}
+{"level":"warn","msg":"retry","ts":"2026-01-01T00:00:02Z"}
+{"level":"error","msg":"timeout","ts":"2026-01-01T00:00:03Z"}
+{"level":"info","msg":"retry","ts":"2026-01-01T00:00:04Z"}
