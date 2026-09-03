@@ -1,0 +1,8 @@
+{
+  "id": "grok-4-6-high",
+  "displayName": "Grok 4.6 (high)",
+  "harness": "grok",
+  "model": "grok-4.6@high",
+  "timeoutSec": 900,
+  "notes": "Grok Build CLI, grok-4.6 with high reasoning effort."
+}

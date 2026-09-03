@@ -1,0 +1,18 @@
+{
+  "id": "voxel-pagoda-garden",
+  "title": "Voxel pagoda garden",
+  "kind": "ui",
+  "description": "Build a single self-contained HTML file rendering a creative, elaborate voxel-art pagoda in a garden with trees and cherry blossoms.",
+  "weights": { "checks": 0.3, "llmJudge": 0.5, "manual": 0.2 },
+  "timeoutSec": 900,
+  "screenshot": true,
+  "iframePath": "preview.html",
+  "checks": [
+    { "id": "html-exists", "type": "file-exists", "weight": 1, "config": { "path": "preview.html" } },
+    { "id": "has-canvas", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "<canvas" } },
+    { "id": "has-script", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "<script" } },
+    { "id": "mentions-voxel", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "voxel" } },
+    { "id": "mentions-pagoda", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "pagoda" } },
+    { "id": "mentions-cherry", "type": "contains", "weight": 1, "config": { "path": "preview.html", "pattern": "cherry" } }
+  ]
+}
